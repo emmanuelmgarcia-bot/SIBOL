@@ -1,0 +1,91 @@
+import React from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  BookOpen, 
+  GraduationCap, 
+  FileText, 
+  Users, 
+  LogOut 
+} from 'lucide-react';
+
+const AdminLayout = ({ children }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Helper to check active route
+  const isActive = (path) => location.pathname === path;
+
+  const handleLogout = () => {
+    navigate('/login/admin');
+  };
+
+  return (
+    <div className="flex h-screen bg-gray-50 font-sans">
+      {/* Sidebar */}
+      <aside className="w-64 bg-chedBlue text-white flex flex-col shadow-xl z-20">
+        
+        {/* LOGO SECTION */}
+        <div className="p-6 border-b border-blue-800 flex items-center gap-3">
+          {/* White Circle Container */}
+          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden p-1 shrink-0">
+             <img 
+                src="/assets/ched-logo.png" 
+                alt="CHED Logo" 
+                className="w-full h-full object-contain"
+             />
+          </div>
+          <div className="overflow-hidden">
+            <p className="text-xs text-blue-200 truncate">Admin Portal</p>
+            <h1 className="font-bold text-sm truncate">Region 2 Office</h1>
+          </div>
+        </div>
+
+        {/* NAVIGATION */}
+        <nav className="flex-1 py-4 overflow-y-auto">
+          
+          <Link to="/admin/dashboard" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/dashboard') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+            <LayoutDashboard size={18} /> Dashboard
+          </Link>
+
+          <Link to="/admin/subjects" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/subjects') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+            <BookOpen size={18} /> Subjects
+          </Link>
+
+          <Link to="/admin/programs" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/programs') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+            <GraduationCap size={18} /> Programs
+          </Link>
+
+          <Link to="/admin/submissions" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/submissions') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+            <FileText size={18} /> Submissions
+          </Link>
+
+          <Link to="/admin/registrations" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/registrations') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+            <Users size={18} /> Registrations
+          </Link>
+
+        </nav>
+
+        {/* LOGOUT */}
+        <div className="p-4 border-t border-blue-800">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-red-300 hover:text-red-100 w-full px-4 py-2 text-sm transition-colors"
+          >
+            <LogOut size={16} /> Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="bg-white shadow-sm h-16 flex items-center px-8 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-800">Admin Dashboard</h2>
+        </header>
+        <main className="flex-1 overflow-auto p-8">{children}</main>
+      </div>
+    </div>
+  );
+};
+
+export default AdminLayout;
