@@ -106,6 +106,16 @@ const loginUser = async (req, res) => {
       }
     }
 
+    if (!heiId) {
+      console.error('Missing HEI ID for registration during login:', {
+        registrationId: reg.id,
+        hei_name: reg.hei_name
+      });
+      return res.status(500).json({
+        error: 'HEI configuration is incomplete for this account. Please contact CHED to fix the HEI record.'
+      });
+    }
+
     return res.status(200).json({
       message: 'Login successful',
       token: 'mock-token',

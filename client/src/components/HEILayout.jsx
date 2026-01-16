@@ -32,6 +32,12 @@ const HEILayout = ({ children }) => {
         navigate('/login');
         return;
       }
+      if (!parsed.hei_id) {
+        localStorage.removeItem('sibol_token');
+        localStorage.removeItem('sibol_user');
+        navigate('/login');
+        return;
+      }
       const mustChange = !!parsed.must_change_password;
       if (mustChange && location.pathname !== '/hei/account') {
         navigate('/hei/account');
