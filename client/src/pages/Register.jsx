@@ -35,10 +35,9 @@ const Register = () => {
     suffix: ''
   });
 
-  // --- INITIAL DATA FETCH ---
   useEffect(() => {
-    // 1. Fetch HEI Data
-    fetch('http://localhost:5000/api/hei-data')
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+    fetch(`${apiBase}/api/hei-data`)
       .then(res => res.json())
       .then(data => {
         if (data.list) {
@@ -48,8 +47,7 @@ const Register = () => {
       })
       .catch(err => console.error("Error loading HEI data:", err));
 
-    // 2. Fetch Regions
-    fetch('http://localhost:5000/api/regions')
+    fetch(`${apiBase}/api/regions`)
       .then(res => res.json())
       .then(data => setRegionOptions(data))
       .catch(err => console.error("Error loading regions:", err));
@@ -78,7 +76,8 @@ const Register = () => {
     setBarangayOptions([]);
 
     if (region) {
-        fetch(`http://localhost:5000/api/provinces/${encodeURIComponent(region)}`)
+        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+        fetch(`${apiBase}/api/provinces/${encodeURIComponent(region)}`)
             .then(res => res.json())
             .then(data => setProvinceOptions(data));
     }
@@ -94,7 +93,8 @@ const Register = () => {
     setBarangayOptions([]);
 
     if (province) {
-        fetch(`http://localhost:5000/api/municipalities/${encodeURIComponent(province)}`)
+        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+        fetch(`${apiBase}/api/municipalities/${encodeURIComponent(province)}`)
             .then(res => res.json())
             .then(data => setCityOptions(data));
     }
@@ -109,7 +109,8 @@ const Register = () => {
     setBarangayOptions([]);
 
     if (city) {
-        fetch(`http://localhost:5000/api/barangays/${encodeURIComponent(city)}`)
+        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+        fetch(`${apiBase}/api/barangays/${encodeURIComponent(city)}`)
             .then(res => res.json())
             .then(data => setBarangayOptions(data));
     }

@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
+const csv = require('csv-parser');
 
 // Load Env Variables
 dotenv.config();
@@ -24,15 +25,16 @@ app.use(express.json());
 app.use('/api/auth', authRoutes); // POST /api/auth/login
 app.use('/api/heis', heiRoutes);  // GET /api/heis
 
-// ==========================================
-// 2. LEGACY LOCATION DATA (JSON Files)
-// ==========================================
-// We keep this file-based because the PSGC data is huge and rarely changes.
 let locationData = {
     regions: [],
     provinces: [],
     municipalities: [],
     barangays: []
+};
+
+let heiData = {
+    list: [],
+    mapping: {}
 };
 
 const loadLocationData = () => {
@@ -59,8 +61,55 @@ const loadLocationData = () => {
     loadJson('barangays.json', 'barangays');
 };
 
-// Initialize Location Data
+const loadHeiData = () => {
+    const csvPath = path.join(__dirname, 'data', 'Campus_list.csv');
+    heiData = {
+        list: [],
+        mapping: {}
+    };
+    if (!fs.existsSync(csvPath)) {
+        console.warn('⚠️ WARNING: Campus_list.csv NOT FOUND in server/data/');
+        return;
+    }
+    const mapping = {};
+    fs.createReadStream(csvPath)
+        .pipe(csv())
+        .on('data', row => {
+            const rawName = row['HEI Name'];
+            const rawCampus = row['Campus'];
+            if (!rawName) {
+                return;
+            }
+            const heiName = String(rawName).trim();
+            const campusName = rawCampus ? String(rawCampus).trim() : '';
+            if (!heiName) {
+                return;
+            }
+            if (!mapping[heiName]) {
+                mapping[heiName] = [];
+            }
+            if (campusName && !mapping[heiName].includes(campusName)) {
+                mapping[heiName].push(campusName);
+            }
+        })
+        .on('end', () => {
+            const list = Object.keys(mapping).sort((a, b) => a.localeCompare(b));
+            Object.keys(mapping).forEach(key => {
+                mapping[key].sort((a, b) => a.localeCompare(b));
+            });
+            heiData = {
+                list,
+                mapping
+            };
+            console.log(`✅ HEI CSV LOADED: Campus_list.csv (${list.length} HEIs)`);
+        })
+        .on('error', err => {
+            console.error('❌ ERROR: Could not load Campus_list.csv', err.message);
+        });
+};
+
 loadLocationData();
+loadHeiData();
 
 // Location Routes
 app.get('/api/regions', (req, res) => res.json(locationData.regions));
@@ -81,6 +130,10 @@ app.get('/api/barangays/:municipality', (req, res) => {
     const munName = req.params.municipality;
     const filtered = locationData.barangays.filter(b => b.citymun === munName);
     res.json(filtered.sort((a, b) => a.name.localeCompare(b.name)));
+});
+
+app.get('/api/hei-data', (req, res) => {
+    res.json(heiData);
 });
 
 // ==========================================
