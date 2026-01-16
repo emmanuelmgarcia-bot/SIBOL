@@ -1,37 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Eye, Download, Calendar } from 'lucide-react';
 
 const HEISubmissions = () => {
-  // --- STATE ---
-  const [activeTab, setActiveTab] = useState('Form 1'); // 'Form 1' or 'Form 2'
+  const [activeTab, setActiveTab] = useState('Form 1');
+  const [submissionsForm1, setSubmissionsForm1] = useState([]);
+  const [submissionsForm2, setSubmissionsForm2] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // --- MOCK DATA: FORM 1 SUBMISSIONS (Integrated & Elective Only) ---
-  const submissionsForm1 = [
-    { 
-      id: 'SUB-F1-2024', 
-      name: 'Form 1 Submission - AY 2024-2025',
-      date: 'August 15, 2024', 
-    },
-    { 
-      id: 'SUB-F1-2023', 
-      name: 'Form 1 Submission - AY 2023-2024',
-      date: 'August 10, 2023', 
-    },
-  ];
-
-  // --- MOCK DATA: FORM 2 SUBMISSIONS (Integrated, Elective & Specialization) ---
-  const submissionsForm2 = [
-    { 
-      id: 'SUB-F2-2024', 
-      name: 'Form 2 Submission - AY 2024-2025',
-      date: 'September 01, 2024', 
-    },
-    { 
-      id: 'SUB-F2-2023', 
-      name: 'Form 2 Submission - AY 2023-2024',
-      date: 'September 05, 2023', 
-    },
-  ];
+  useEffect(() => {
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const heiId = user && user.hei_id ? user.hei_id : null;
+    if (!heiId) {
+      setLoading(false);
+      return;
+    }
+    const apiBase =
+      window.location.hostname === 'localhost'
+        ? 'http://localhost:5001'
+        : '';
+    const load = async () => {
+      try {
+        const response = await fetch(`${apiBase}/api/heis/submissions?heiId=${encodeURIComponent(heiId)}`);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load submissions');
+        }
+        const form1 = [];
+        const form2 = [];
+        data.forEach(item => {
+          const entry = {
+            id: item.id,
+            name: item.file_name,
+            date: item.created_at
+          };
+          if (item.form_type === 'form1') {
+            form1.push(entry);
+          } else if (item.form_type === 'form2') {
+            form2.push(entry);
+          }
+        });
+        setSubmissionsForm1(form1);
+        setSubmissionsForm2(form2);
+      } catch (err) {
+        console.error('Load submissions error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -81,7 +99,9 @@ const HEISubmissions = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {submissionsForm1.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan="3" className="p-8 text-center text-gray-400 italic">Loading submissions...</td></tr>
+              ) : submissionsForm1.length === 0 ? (
                  <tr><td colSpan="3" className="p-8 text-center text-gray-400 italic">No submissions found.</td></tr>
               ) : (
                 submissionsForm1.map((item) => (
@@ -92,7 +112,7 @@ const HEISubmissions = () => {
                     </td>
                     <td className="p-4 text-gray-600">
                       <div className="flex items-center gap-2">
-                        <Calendar size={14} /> {item.date}
+                        <Calendar size={14} /> {new Date(item.date).toLocaleDateString()}
                       </div>
                     </td>
                     <td className="p-4 text-center flex justify-center gap-2">
@@ -121,7 +141,9 @@ const HEISubmissions = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {submissionsForm2.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan="3" className="p-8 text-center text-gray-400 italic">Loading submissions...</td></tr>
+              ) : submissionsForm2.length === 0 ? (
                  <tr><td colSpan="3" className="p-8 text-center text-gray-400 italic">No submissions found.</td></tr>
               ) : (
                 submissionsForm2.map((item) => (
@@ -132,7 +154,7 @@ const HEISubmissions = () => {
                     </td>
                     <td className="p-4 text-gray-600">
                       <div className="flex items-center gap-2">
-                        <Calendar size={14} /> {item.date}
+                        <Calendar size={14} /> {new Date(item.date).toLocaleDateString()}
                       </div>
                     </td>
                     <td className="p-4 text-center flex justify-center gap-2">

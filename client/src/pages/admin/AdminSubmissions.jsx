@@ -2,9 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Building2, MapPin, FileText, Download, Eye, Calendar } from 'lucide-react';
 
 const AdminSubmissions = () => {
-  // ==========================================
-  // 1. HEI & CAMPUS SELECTION STATE (ADMIN ONLY)
-  // ==========================================
   const [heiList, setHeiList] = useState([]);
   const [heiSearch, setHeiSearch] = useState('');
   const [selectedHei, setSelectedHei] = useState(null);
@@ -13,61 +10,46 @@ const AdminSubmissions = () => {
   const [loading, setLoading] = useState(true);
   const wrapperRef = useRef(null);
 
-  // ==========================================
-  // 2. SUBMISSION TABLE STATE (FROM HEISubmissions)
-  // ==========================================
-  const [activeTab, setActiveTab] = useState('Form 1'); // 'Form 1' or 'Form 2'
+  const [activeTab, setActiveTab] = useState('Form 1');
+  const [submissionsForm1, setSubmissionsForm1] = useState([]);
+  const [submissionsForm2, setSubmissionsForm2] = useState([]);
 
-  // Mock Data: Form 1
-  const [submissionsForm1, setSubmissionsForm1] = useState([
-    { 
-      id: 'SUB-F1-2024', 
-      name: 'Form 1 Submission - AY 2024-2025',
-      date: 'August 15, 2024', 
-    },
-    { 
-      id: 'SUB-F1-2023', 
-      name: 'Form 1 Submission - AY 2023-2024',
-      date: 'August 10, 2023', 
-    },
-  ]);
-
-  // Mock Data: Form 2
-  const [submissionsForm2, setSubmissionsForm2] = useState([
-    { 
-      id: 'SUB-F2-2024', 
-      name: 'Form 2 Submission - AY 2024-2025',
-      date: 'September 01, 2024', 
-    },
-    { 
-      id: 'SUB-F2-2023', 
-      name: 'Form 2 Submission - AY 2023-2024',
-      date: 'September 05, 2023', 
-    },
-  ]);
-
-  // --- FETCH HEI DATA ---
   useEffect(() => {
-    fetch('http://localhost:5000/api/hei-data')
+    const apiBase =
+      window.location.hostname === 'localhost'
+        ? 'http://localhost:5001'
+        : '';
+    fetch(`${apiBase}/api/heis`)
       .then(res => res.json())
       .then(data => {
-        if (data.mapping) {
-            const parsedList = Object.entries(data.mapping).map(([hei, campuses]) => ({
-                hei: hei,
-                campuses: campuses.sort()
-            }));
-            parsedList.sort((a, b) => a.hei.localeCompare(b.hei));
-            setHeiList(parsedList);
+        if (Array.isArray(data)) {
+          const grouped = data.reduce((acc, item) => {
+            const key = item.name;
+            if (!acc[key]) {
+              acc[key] = {
+                heiId: item.id,
+                hei: item.name,
+                campuses: []
+              };
+            }
+            if (item.campus && !acc[key].campuses.includes(item.campus)) {
+              acc[key].campuses.push(item.campus);
+            }
+            return acc;
+          }, {});
+          const list = Object.values(grouped);
+          list.forEach(entry => entry.campuses.sort());
+          list.sort((a, b) => a.hei.localeCompare(b.hei));
+          setHeiList(list);
         }
         setLoading(false);
       })
       .catch(err => {
-        console.error("Error loading HEI data:", err);
+        console.error('Error loading HEI data:', err);
         setLoading(false);
       });
   }, []);
 
-  // --- CLICK OUTSIDE HANDLER ---
   useEffect(() => {
     function handleClickOutside(event) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
@@ -78,7 +60,6 @@ const AdminSubmissions = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [wrapperRef]);
 
-  // --- HANDLERS ---
   const handleHeiSelect = (item) => {
     setSelectedHei(item);
     setHeiSearch(item.hei);
@@ -89,6 +70,51 @@ const AdminSubmissions = () => {
   const filteredHeis = heiList.filter(item => 
     item.hei.toLowerCase().includes(heiSearch.toLowerCase())
   );
+
+  useEffect(() => {
+    if (!selectedHei || !selectedCampus) {
+      setSubmissionsForm1([]);
+      setSubmissionsForm2([]);
+      return;
+    }
+    const apiBase =
+      window.location.hostname === 'localhost'
+        ? 'http://localhost:5001'
+        : '';
+    const load = async () => {
+      try {
+        const url = `${apiBase}/api/heis/submissions?heiId=${encodeURIComponent(
+          selectedHei.heiId
+        )}&campus=${encodeURIComponent(selectedCampus)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load submissions');
+        }
+        const form1 = [];
+        const form2 = [];
+        data.forEach(item => {
+          const entry = {
+            id: item.id,
+            name: item.file_name,
+            date: item.created_at
+          };
+          if (item.form_type === 'form1') {
+            form1.push(entry);
+          } else if (item.form_type === 'form2') {
+            form2.push(entry);
+          }
+        });
+        setSubmissionsForm1(form1);
+        setSubmissionsForm2(form2);
+      } catch (err) {
+        console.error('Load submissions error:', err);
+        setSubmissionsForm1([]);
+        setSubmissionsForm2([]);
+      }
+    };
+    load();
+  }, [selectedHei, selectedCampus]);
 
   return (
     <div className="space-y-6">
@@ -224,7 +250,7 @@ const AdminSubmissions = () => {
                             </td>
                             <td className="p-4 text-gray-600">
                             <div className="flex items-center gap-2">
-                                <Calendar size={14} /> {item.date}
+                                <Calendar size={14} /> {new Date(item.date).toLocaleDateString()}
                             </div>
                             </td>
                             <td className="p-4 text-center flex justify-center gap-2">
@@ -264,7 +290,7 @@ const AdminSubmissions = () => {
                             </td>
                             <td className="p-4 text-gray-600">
                             <div className="flex items-center gap-2">
-                                <Calendar size={14} /> {item.date}
+                                <Calendar size={14} /> {new Date(item.date).toLocaleDateString()}
                             </div>
                             </td>
                             <td className="p-4 text-center flex justify-center gap-2">

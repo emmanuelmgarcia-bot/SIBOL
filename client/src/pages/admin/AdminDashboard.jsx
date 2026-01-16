@@ -155,12 +155,12 @@ const AdminDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <StatCard label="Number of Subjects" value="142" color="blue" />
-            <StatCard label="Degree Programs" value="28" color="indigo" />
-            <StatCard label="Total Faculty" value="315" color="green" />
-            <StatCard label="Faculty w/ Subjects" value="289" color="emerald" />
-            <StatCard label="Subjects in Program" value="85" color="orange" />
-            <StatCard label="IP Education Programs" value="4" color="purple" />
+            <StatCard label="Number of Subjects" value="0" color="blue" />
+            <StatCard label="Degree Programs" value="0" color="indigo" />
+            <StatCard label="Total Faculty" value="0" color="green" />
+            <StatCard label="Faculty w/ Subjects" value="0" color="emerald" />
+            <StatCard label="Subjects in Program" value="0" color="orange" />
+            <StatCard label="IP Education Programs" value="0" color="purple" />
           </div>
         </div>
       )}

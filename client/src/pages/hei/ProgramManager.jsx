@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 const ProgramManager = () => {
-  // --- MOCK DATA: CHED PROGRAMS (Master List) ---
   const chedPrograms = [
     { code: 'BS IT', title: 'Bachelor of Science in Information Technology' },
     { code: 'BS CS', title: 'Bachelor of Science in Computer Science' },
@@ -10,37 +9,79 @@ const ProgramManager = () => {
     { code: 'AB PolSci', title: 'Bachelor of Arts in Political Science' },
   ];
 
-  // --- MOCK DATA: HEI's ADOPTED PROGRAMS ---
-  const [myPrograms, setMyPrograms] = useState([
-    { 
-        id: 1, 
-        code: 'BS IT', 
-        title: 'Bachelor of Science in Information Technology', 
-        curriculum: 'bsit_curr_2023.pdf', 
-        status: 'Approved' 
-    }
-  ]);
+  const [myPrograms, setMyPrograms] = useState([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Form State
   const [selectedProgramCode, setSelectedProgramCode] = useState('');
   const [curriculumFile, setCurriculumFile] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!selectedProgramCode) return;
-
-    // Find full details from master list
     const programDetails = chedPrograms.find(p => p.code === selectedProgramCode);
-
-    setMyPrograms([...myPrograms, {
+    let uploadedFile = null;
+    if (curriculumFile) {
+      try {
+        setSaving(true);
+        const readerResult = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(curriculumFile);
+        });
+        const base64 = typeof readerResult === 'string' ? readerResult.split(',')[1] : '';
+        const userRaw = localStorage.getItem('sibol_user');
+        const user = userRaw ? JSON.parse(userRaw) : null;
+        const heiId = user && user.hei_id ? user.hei_id : null;
+        const apiBase =
+          window.location.hostname === 'localhost'
+            ? 'http://localhost:5001'
+            : '';
+        const response = await fetch(`${apiBase}/api/heis/submissions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            heiId,
+            campus: 'MAIN',
+            formType: 'curriculum',
+            fileName: curriculumFile.name,
+            mimeType: curriculumFile.type || 'application/octet-stream',
+            fileBase64: base64
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Upload failed');
+        }
+        uploadedFile = {
+          name: curriculumFile.name,
+          fileId: data.fileId,
+          webViewLink: data.webViewLink || null,
+          webContentLink: data.webContentLink || null
+        };
+      } catch (err) {
+        console.error('Curriculum upload error:', err);
+        alert(err.message || 'Failed to upload curriculum file');
+      } finally {
+        setSaving(false);
+      }
+    }
+    setMyPrograms([
+      ...myPrograms,
+      {
         id: Date.now(),
         ...programDetails,
-        curriculum: curriculumFile ? curriculumFile.name : null,
+        curriculum: uploadedFile ? uploadedFile.name : null,
+        curriculumFileId: uploadedFile ? uploadedFile.fileId : null,
+        curriculumViewUrl: uploadedFile ? uploadedFile.webViewLink || uploadedFile.webContentLink || null : null,
         status: 'For Approval'
-    }]);
-
+      }
+    ]);
     setIsModalOpen(false);
     setSelectedProgramCode('');
     setCurriculumFile(null);
@@ -85,7 +126,15 @@ const ProgramManager = () => {
                             <td className="p-4 text-gray-700 font-medium">{prog.title}</td>
                             <td className="p-4 text-center">
                                 {prog.curriculum ? (
-                                    <button className="text-indigo-600 hover:text-indigo-800 text-xs font-bold border border-indigo-200 bg-indigo-50 px-3 py-1 rounded">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (prog.curriculumViewUrl) {
+                                          window.open(prog.curriculumViewUrl, '_blank', 'noopener,noreferrer');
+                                        }
+                                      }}
+                                      className="text-indigo-600 hover:text-indigo-800 text-xs font-bold border border-indigo-200 bg-indigo-50 px-3 py-1 rounded"
+                                    >
                                         📄 View Curriculum
                                     </button>
                                 ) : <span className="text-gray-400 text-xs">No file</span>}
@@ -143,7 +192,7 @@ const ProgramManager = () => {
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                         <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg text-sm">Cancel</button>
-                        <button type="submit" className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 text-sm">Add Program</button>
+                        <button type="submit" disabled={saving} className={`px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 text-sm ${saving ? 'opacity-70 cursor-not-allowed' : ''}`}>{saving ? 'Saving...' : 'Add Program'}</button>
                     </div>
                 </form>
             </div>

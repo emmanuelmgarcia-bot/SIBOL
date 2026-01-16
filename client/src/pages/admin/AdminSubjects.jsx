@@ -14,13 +14,7 @@ const AdminSubjects = () => {
   // --- SUBJECT MANAGEMENT STATE ---
   const [activeTab, setActiveTab] = useState('All'); // 'All', 'Approved', 'For Approval'
   
-  // Mock Data for Subjects
-  const [subjects, setSubjects] = useState([
-    { id: 1, code: 'GEC 101', title: 'Understanding the Self', units: 3, type: 'Integrated', status: 'For Approval', syllabus: 'gec101.pdf' },
-    { id: 2, code: 'PE 101', title: 'Movement Enhancement', units: 2, type: 'Elective', status: 'Approved', syllabus: 'pe101.pdf' },
-    { id: 3, code: 'IP 101', title: 'Indigenous Cultures', units: 3, type: 'Integrated', status: 'For Approval', syllabus: 'ip101.pdf' },
-    { id: 4, code: 'BA IS', title: 'Bachelor of Arts in Indigenous Studies', type: 'IP Specialization', status: 'For Approval', syllabus: 'bais_syllabus.pdf' },
-  ]);
+  const [subjects, setSubjects] = useState([]);
 
   // --- 1. FETCH HEI DATA ---
   useEffect(() => {

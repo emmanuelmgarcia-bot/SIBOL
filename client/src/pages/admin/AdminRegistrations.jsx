@@ -19,14 +19,7 @@ const AdminRegistrations = () => {
   const [activeTab, setActiveTab] = useState('For Approval'); // 'For Approval', 'Approved'
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mock Data: Registrations
-  const [registrations, setRegistrations] = useState([
-    { id: 1, name: 'Juan Dela Cruz', username: 'juandc_isu', hei: 'Isabela State University', campus: 'Echague (Main)', status: 'For Approval' },
-    { id: 2, name: 'Maria Santos', username: 'msantos_csu', hei: 'Cagayan State University', campus: 'Carig', status: 'For Approval' },
-    { id: 3, name: 'Pedro Penduko', username: 'ppenduko_smu', hei: 'Saint Mary\'s University', campus: 'Bayombong (Main)', status: 'For Approval' },
-    { id: 4, name: 'Ana Reyes', username: 'areyes_isu', hei: 'Isabela State University', campus: 'Cauayan', status: 'Approved' },
-    { id: 5, name: 'Jose Rizal', username: 'jrizal_nvsu', hei: 'Nueva Vizcaya State University', campus: 'Bayombong (Main)', status: 'Approved' },
-  ]);
+  const [registrations, setRegistrations] = useState([]);
 
   // --- 1. FETCH HEI DATA ---
   useEffect(() => {

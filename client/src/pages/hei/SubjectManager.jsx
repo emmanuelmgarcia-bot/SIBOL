@@ -1,43 +1,8 @@
 import React, { useState } from 'react';
 
 const SubjectManager = () => {
-  // --- MOCK DATA ---
-  // Contains all 3 types: Integrated, Elective, and IP Degree Programs
-  const [subjects, setSubjects] = useState([
-    { 
-        id: 1, 
-        type: 'Integrated', 
-        code: 'GEC 101', 
-        title: 'Understanding the Self', 
-        units: 3, 
-        status: 'Approved', 
-        syllabus: 'gec101_syllabus.pdf' 
-    },
-    { 
-        id: 2, 
-        type: 'Elective', 
-        code: 'PE 101', 
-        title: 'Movement Enhancement', 
-        units: 2, 
-        status: 'For Approval', 
-        syllabus: null 
-    },
-    { 
-        id: 3, 
-        type: 'Degree Program', // This is the IP Specialization
-        code: 'BA IS', 
-        title: 'Bachelor of Arts in Indigenous Studies', 
-        govtAuthority: 'CHED-RO2-123', 
-        ayStarted: '2020-2021',
-        studentsAy1: '50',
-        studentsAy2: '65',
-        studentsAy3: '70',
-        status: 'Approved',
-        syllabus: 'bais_syllabus.pdf' // Treated as subject = Syllabus
-    },
-  ]);
+  const [subjects, setSubjects] = useState([]);
 
-  // --- STATES ---
   const [activeTab, setActiveTab] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -59,8 +24,8 @@ const SubjectManager = () => {
   };
 
   const [formData, setFormData] = useState(initialFormState);
+  const [saving, setSaving] = useState(false);
 
-  // --- HANDLERS ---
   const openAddModal = () => {
     setFormData(initialFormState);
     setIsEditing(false);
@@ -80,16 +45,74 @@ const SubjectManager = () => {
     }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    const mockFileName = formData.syllabusFile ? formData.syllabusFile.name : (formData.syllabus || null);
-
+    let syllabusMeta = null;
+    if (formData.syllabusFile) {
+      try {
+        setSaving(true);
+        const readerResult = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(formData.syllabusFile);
+        });
+        const base64 = typeof readerResult === 'string' ? readerResult.split(',')[1] : '';
+        const userRaw = localStorage.getItem('sibol_user');
+        const user = userRaw ? JSON.parse(userRaw) : null;
+        const heiId = user && user.hei_id ? user.hei_id : null;
+        const apiBase =
+          window.location.hostname === 'localhost'
+            ? 'http://localhost:5001'
+            : '';
+        const response = await fetch(`${apiBase}/api/heis/submissions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            heiId,
+            campus: 'MAIN',
+            formType: 'syllabus',
+            fileName: formData.syllabusFile.name,
+            mimeType: formData.syllabusFile.type || 'application/octet-stream',
+            fileBase64: base64
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Upload failed');
+        }
+        syllabusMeta = {
+          name: formData.syllabusFile.name,
+          fileId: data.fileId,
+          viewUrl: data.webViewLink || data.webContentLink || null
+        };
+      } catch (err) {
+        console.error('Syllabus upload error:', err);
+        alert(err.message || 'Failed to upload syllabus file');
+      } finally {
+        setSaving(false);
+      }
+    }
+    const syllabusName = syllabusMeta ? syllabusMeta.name : (formData.syllabus || null);
+    const nextSubject = {
+      ...formData,
+      syllabus: syllabusName,
+      syllabusFileId: syllabusMeta ? syllabusMeta.fileId : null,
+      syllabusViewUrl: syllabusMeta ? syllabusMeta.viewUrl : null
+    };
     if (isEditing) {
-        setSubjects(subjects.map(s => s.id === currentId ? { ...s, ...formData, syllabus: mockFileName } : s));
+      setSubjects(subjects.map(s => (s.id === currentId ? { ...s, ...nextSubject } : s)));
     } else {
-        setSubjects([...subjects, { 
-            id: Date.now(), ...formData, status: 'For Approval', syllabus: mockFileName
-        }]);
+      setSubjects([
+        ...subjects,
+        {
+          id: Date.now(),
+          ...nextSubject,
+          status: 'For Approval'
+        }
+      ]);
     }
     setIsModalOpen(false);
   };
@@ -168,7 +191,15 @@ const SubjectManager = () => {
                             </td>
                             <td className="p-4 text-center">
                                 {sub.syllabus ? (
-                                    <button className="text-blue-600 hover:text-blue-800 text-xs font-bold border border-blue-200 bg-blue-50 px-3 py-1 rounded">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (sub.syllabusViewUrl) {
+                                          window.open(sub.syllabusViewUrl, '_blank', 'noopener,noreferrer');
+                                        }
+                                      }}
+                                      className="text-blue-600 hover:text-blue-800 text-xs font-bold border border-blue-200 bg-blue-50 px-3 py-1 rounded"
+                                    >
                                         📄 View Syllabus
                                     </button>
                                 ) : <span className="text-gray-400 text-xs italic">No file</span>}
@@ -269,7 +300,7 @@ const SubjectManager = () => {
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                         <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg text-sm">Cancel</button>
-                        <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 text-sm">Save</button>
+                        <button type="submit" disabled={saving} className={`px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 text-sm ${saving ? 'opacity-70 cursor-not-allowed' : ''}`}>{saving ? 'Saving...' : 'Save'}</button>
                     </div>
                 </form>
             </div>

@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+const supabase = require('../config/supabase');
 
 const loginUser = async (req, res) => {
   const { username, isAdmin } = req.body; // ignoring password for a moment to test connection
@@ -6,18 +6,23 @@ const loginUser = async (req, res) => {
   try {
     console.log(`[Auth] Checking public.profiles for: ${username}`);
 
-    // 1. DIRECTLY QUERY THE PROFILES TABLE
-    const profileResult = await pool.query(
-      `SELECT * FROM public.profiles WHERE username = $1`, 
-      [username]
-    );
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('username', username)
+      .limit(1);
 
-    if (profileResult.rows.length === 0) {
+    if (error) {
+      console.error('Supabase query error:', error.message);
+      return res.status(500).json({ error: 'Server error during login: ' + error.message });
+    }
+
+    if (!profiles || profiles.length === 0) {
       console.log("User not found in profiles table.");
       return res.status(401).json({ error: 'User not found in database' });
     }
 
-    const profile = profileResult.rows[0];
+    const profile = profiles[0];
     console.log("User found:", profile.username);
 
     // 2. SECURITY CHECK

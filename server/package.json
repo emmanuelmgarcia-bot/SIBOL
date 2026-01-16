@@ -13,6 +13,7 @@
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.3",
     "express": "^4.22.1",
+    "googleapis": "^126.0.1",
     "pg": "^8.17.1"
   },
   "devDependencies": {

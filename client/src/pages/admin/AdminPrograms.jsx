@@ -5,17 +5,7 @@ const AdminPrograms = () => {
   // ==========================================
   // SECTION 1: MASTER PROGRAM LIST STATE
   // ==========================================
-  // Mock Data: Added more entries to demonstrate scrolling
-  const [masterPrograms, setMasterPrograms] = useState([
-    { id: 101, code: 'BS IT', title: 'Bachelor of Science in Information Technology' },
-    { id: 102, code: 'BS CS', title: 'Bachelor of Science in Computer Science' },
-    { id: 103, code: 'BS IS', title: 'Bachelor of Science in Information Systems' },
-    { id: 104, code: 'BS Nurs', title: 'Bachelor of Science in Nursing' },
-    { id: 105, code: 'BS Bio', title: 'Bachelor of Science in Biology' },
-    { id: 106, code: 'BS Math', title: 'Bachelor of Science in Mathematics' },
-    { id: 107, code: 'AB PolSci', title: 'Bachelor of Arts in Political Science' },
-    { id: 108, code: 'AB Hist', title: 'Bachelor of Arts in History' },
-  ]);
+  const [masterPrograms, setMasterPrograms] = useState([]);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newProgram, setNewProgram] = useState({ code: '', title: '' });
@@ -57,11 +47,7 @@ const AdminPrograms = () => {
 
   const [activeTab, setActiveTab] = useState('All'); 
   
-  // Mock Data for HEI Specific Programs
-  const [programs, setPrograms] = useState([
-    { id: 1, code: 'BS IT', title: 'Bachelor of Science in Information Technology', status: 'Approved', curriculum: 'bsit_curr.pdf' },
-    { id: 2, code: 'BS CS', title: 'Bachelor of Science in Computer Science', status: 'For Approval', curriculum: 'bscs_curr.pdf' },
-  ]);
+  const [programs, setPrograms] = useState([]);
 
   // FETCH HEI DATA
   useEffect(() => {

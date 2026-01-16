@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 
 const Form1 = () => {
-  // --- STATE MANAGEMENT ---
   const [rowsA, setRowsA] = useState([]);
   const [rowsB, setRowsB] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Inputs for Section A (Integrated)
   const [inputA, setInputA] = useState({ subject: '', program: '', faculty: '' });
   // Inputs for Section B (Elective)
   const [inputB, setInputB] = useState({ subject: '', program: '', faculty: '' });
@@ -15,7 +14,6 @@ const Form1 = () => {
   const programs = ["BS Info Tech", "BS Civil Eng", "BS Nursing", "AB Pol Sci"];
   const faculties = ["Dr. Maria Santos", "Mr. John Doe", "Ms. Jane Smith"];
 
-  // --- HANDLERS ---
   const addRowA = () => {
     if (!inputA.subject || !inputA.faculty || !inputA.program) return;
     setRowsA([...rowsA, { id: Date.now(), ...inputA, units: 3, status: 'Permanent', education: 'PhD' }]);
@@ -26,6 +24,53 @@ const Form1 = () => {
     if (!inputB.subject || !inputB.faculty || !inputB.program) return;
     setRowsB([...rowsB, { id: Date.now(), ...inputB, units: 3, status: 'Contractual', education: 'MS' }]);
     setInputB({ subject: '', program: '', faculty: '' });
+  };
+
+  const handleSubmit = async () => {
+    if (rowsA.length === 0 && rowsB.length === 0) {
+      alert('No data to submit.');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      const payload = {
+        integrated: rowsA,
+        elective: rowsB
+      };
+      const json = JSON.stringify(payload);
+      const base64 = btoa(unescape(encodeURIComponent(json)));
+      const userRaw = localStorage.getItem('sibol_user');
+      const user = userRaw ? JSON.parse(userRaw) : null;
+      const heiId = user && user.hei_id ? user.hei_id : null;
+      const apiBase =
+        window.location.hostname === 'localhost'
+          ? 'http://localhost:5001'
+          : '';
+      const response = await fetch(`${apiBase}/api/heis/submissions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          heiId,
+          campus: 'MAIN',
+          formType: 'form1',
+          fileName: `form1-${new Date().toISOString().slice(0, 10)}.json`,
+          mimeType: 'application/json',
+          fileBase64: base64
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Submission failed');
+      }
+      alert('Form 1 submitted successfully.');
+    } catch (err) {
+      console.error('Form 1 submit error:', err);
+      alert(err.message || 'Failed to submit Form 1');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -166,10 +211,15 @@ const Form1 = () => {
         </div>
       </div>
 
-      {/* Submit Button */}
       <div className="flex justify-end pt-4">
-        <button className="bg-green-600 text-white px-8 py-3 rounded-lg shadow-lg hover:bg-green-700 font-bold flex items-center gap-2 transform hover:scale-105 transition-all">
-            <span className="text-xl">✓</span> Submit Form 1
+        <button
+          onClick={handleSubmit}
+          disabled={submitting}
+          className={`bg-green-600 text-white px-8 py-3 rounded-lg shadow-lg font-bold flex items-center gap-2 transform transition-all ${
+            submitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-700 hover:scale-105'
+          }`}
+        >
+            <span className="text-xl">✓</span> {submitting ? 'Submitting...' : 'Submit Form 1'}
         </button>
       </div>
     </div>
