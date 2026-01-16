@@ -86,8 +86,11 @@ app.get('/api/barangays/:municipality', (req, res) => {
 // ==========================================
 // 3. START SERVER
 // ==========================================
-app.get('/', (req, res) => {
-    res.send('SIBOL API is Running...');
+// Serve static assets in production
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../client', 'dist', 'index.html'));
 });
 
 app.listen(PORT, () => {
