@@ -188,7 +188,7 @@ const approveRegistration = async (req, res) => {
 
     const { data: rows, error: fetchError } = await supabase
       .from('registrations')
-      .select('id, region, hei_name, campus')
+      .select('id, region, hei_name, campus, first_name')
       .eq('id', id)
       .single();
 
@@ -217,8 +217,10 @@ const approveRegistration = async (req, res) => {
 
     const heiNameRaw = rows.hei_name || '';
     const campusRaw = rows.campus || '';
+    const firstNameRaw = rows.first_name || '';
     const heiName = heiNameRaw.trim();
     const campusName = campusRaw.trim();
+    const repFirstName = firstNameRaw.trim();
 
     let heiId = null;
     if (heiName) {
@@ -247,14 +249,19 @@ const approveRegistration = async (req, res) => {
     }
 
     let createdUsername = null;
-    const baseParts = [];
-    if (heiName) {
-      baseParts.push(heiName);
+    let base = repFirstName;
+
+    if (!base) {
+      const baseParts = [];
+      if (heiName) {
+        baseParts.push(heiName);
+      }
+      if (campusName) {
+        baseParts.push(campusName);
+      }
+      base = baseParts.join(' ');
     }
-    if (campusName) {
-      baseParts.push(campusName);
-    }
-    const base = baseParts.join(' ');
+
     let candidate = base
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '_')
