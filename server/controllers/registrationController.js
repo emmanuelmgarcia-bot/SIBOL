@@ -247,61 +247,58 @@ const approveRegistration = async (req, res) => {
     }
 
     let createdUsername = null;
-    if (heiId) {
-      const baseParts = [];
-      if (heiName) {
-        baseParts.push(heiName);
-      }
-      if (campusName) {
-        baseParts.push(campusName);
-      }
-      const base = baseParts.join(' ');
-      let candidate = base
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
-      if (!candidate) {
-        candidate = `hei_${String(heiId).replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()}`;
-      }
+    const baseParts = [];
+    if (heiName) {
+      baseParts.push(heiName);
+    }
+    if (campusName) {
+      baseParts.push(campusName);
+    }
+    const base = baseParts.join(' ');
+    let candidate = base
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    if (!candidate) {
+      candidate = `hei_${String(heiId || rows.id).replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()}`;
+    }
 
-      let username = candidate;
-      for (let i = 0; i < 5; i++) {
-        const trial = i === 0 ? username : `${candidate}${i + 1}`;
-        const { data: existingProfiles, error: profileFetchError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('username', trial)
-          .limit(1);
-        if (profileFetchError) {
-          console.error('Fetch profile error during approval:', profileFetchError.message);
-          break;
-        }
-        if (!existingProfiles || existingProfiles.length === 0) {
-          username = trial;
-          createdUsername = username;
-          break;
-        }
+    let username = candidate;
+    for (let i = 0; i < 5; i++) {
+      const trial = i === 0 ? username : `${candidate}${i + 1}`;
+      const { data: existingRegs, error: regFetchError } = await supabase
+        .from('registrations')
+        .select('id')
+        .eq('username', trial)
+        .limit(1);
+      if (regFetchError) {
+        console.error('Fetch registration username error during approval:', regFetchError.message);
+        break;
       }
+      if (!existingRegs || existingRegs.length === 0) {
+        username = trial;
+        createdUsername = username;
+        break;
+      }
+    }
 
-      if (createdUsername) {
-        try {
-          const salt = await bcrypt.genSalt(10);
-          const passwordHash = await bcrypt.hash('CHED@1994', salt);
-          const { error: profileInsertError } = await supabase
-            .from('profiles')
-            .insert([{
-              username: createdUsername,
-              role: 'hei',
-              assigned_region: null,
-              hei_id: heiId,
-              password_hash: passwordHash
-            }]);
-          if (profileInsertError) {
-            console.error('Insert profile error during approval:', profileInsertError.message);
-          }
-        } catch (hashError) {
-          console.error('Password hash error during approval:', hashError.message);
+    if (createdUsername) {
+      try {
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash('CHED@1994', salt);
+        const { error: regUpdateError } = await supabase
+          .from('registrations')
+          .update({
+            username: createdUsername,
+            password_hash: passwordHash,
+            is_first_login: true
+          })
+          .eq('id', id);
+        if (regUpdateError) {
+          console.error('Update registration credentials error during approval:', regUpdateError.message);
         }
+      } catch (hashError) {
+        console.error('Password hash error during approval:', hashError.message);
       }
     }
 
