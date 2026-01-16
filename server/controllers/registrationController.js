@@ -187,7 +187,7 @@ const approveRegistration = async (req, res) => {
 
     const { data: rows, error: fetchError } = await supabase
       .from('registrations')
-      .select('id, region')
+      .select('id, region, hei_name, campus')
       .eq('id', id)
       .single();
 
@@ -212,6 +212,26 @@ const approveRegistration = async (req, res) => {
     if (updateError) {
       console.error('Approve registration error:', updateError.message);
       return res.status(500).json({ error: 'Failed to approve registration: ' + updateError.message });
+    }
+
+    const heiName = (rows.hei_name || '').trim();
+    if (heiName) {
+      const { data: existingHeis, error: heiFetchError } = await supabase
+        .from('heis')
+        .select('id')
+        .eq('name', heiName)
+        .limit(1);
+
+      if (heiFetchError) {
+        console.error('Fetch HEI error during approval:', heiFetchError.message);
+      } else if (!existingHeis || existingHeis.length === 0) {
+        const { error: heiInsertError } = await supabase
+          .from('heis')
+          .insert([{ name: heiName }]);
+        if (heiInsertError) {
+          console.error('Insert HEI error during approval:', heiInsertError.message);
+        }
+      }
     }
 
     return res.status(200).json({ success: true });
