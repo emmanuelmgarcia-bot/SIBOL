@@ -15,37 +15,84 @@ const AdminSubjects = () => {
   const [activeTab, setActiveTab] = useState('All'); // 'All', 'Approved', 'For Approval'
   
   const [subjects, setSubjects] = useState([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
 
-  // --- 1. FETCH HEI DATA ---
+  // --- FETCH SUBJECTS ---
+  useEffect(() => {
+    if (!selectedHei || !selectedCampus) {
+        setSubjects([]);
+        return;
+    }
+
+    const fetchSubjects = async () => {
+        setLoadingSubjects(true);
+        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+        const userRaw = localStorage.getItem('sibol_user');
+        const user = userRaw ? JSON.parse(userRaw) : null;
+        const region = user?.assigned_region;
+
+        try {
+            const query = new URLSearchParams({
+                heiId: selectedHei.id,
+                campus: selectedCampus,
+                region: region || ''
+            });
+            const res = await fetch(`${apiBase}/api/heis/subjects?${query.toString()}`);
+            const data = await res.json();
+            
+            if (res.ok) {
+                setSubjects(data);
+            } else {
+                console.error('Failed to fetch subjects:', data.error);
+                setSubjects([]);
+            }
+        } catch (err) {
+            console.error('Error fetching subjects:', err);
+            setSubjects([]);
+        } finally {
+            setLoadingSubjects(false);
+        }
+    };
+
+    fetchSubjects();
+  }, [selectedHei, selectedCampus]);
+
+
   useEffect(() => {
     const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
-    fetch(`${apiBase}/api/heis`)
-      .then(res => res.json())
-      .then(data => {
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const region = user && user.assigned_region ? user.assigned_region : null;
+
+    if (!region) {
+      console.error('Missing assigned region for admin user, cannot load HEI directory');
+      setHeiList([]);
+      setLoading(false);
+      return;
+    }
+
+    fetch(`${apiBase}/api/registrations/hei-directory?region=${encodeURIComponent(region)}`)
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to load HEI directory');
+        }
         if (Array.isArray(data)) {
-          const grouped = data.reduce((acc, item) => {
-            const key = item.name;
-            if (!acc[key]) {
-              acc[key] = {
-                heiId: item.id,
-                hei: item.name,
-                campuses: []
-              };
-            }
-            if (item.campus && !acc[key].campuses.includes(item.campus)) {
-              acc[key].campuses.push(item.campus);
-            }
-            return acc;
-          }, {});
-          const list = Object.values(grouped);
-          list.forEach(entry => entry.campuses.sort());
+          const list = data.map(item => ({
+            id: item.id,
+            hei: item.hei,
+            campuses: Array.isArray(item.campuses) ? [...item.campuses].sort() : []
+          }));
           list.sort((a, b) => a.hei.localeCompare(b.hei));
           setHeiList(list);
+        } else {
+          setHeiList([]);
         }
         setLoading(false);
       })
       .catch(err => {
-        console.error("Error loading HEI data:", err);
+        console.error('Error loading HEI directory:', err);
+        setHeiList([]);
         setLoading(false);
       });
   }, []);
@@ -74,16 +121,50 @@ const AdminSubjects = () => {
   );
 
   // Approve Logic: Updates status to 'Approved'
-  const handleApprove = (id) => {
-    if(window.confirm("Approve this subject?")) {
-        setSubjects(subjects.map(s => s.id === id ? { ...s, status: 'Approved' } : s));
+  const handleApprove = async (id) => {
+    if(!window.confirm("Approve this subject?")) return;
+
+    try {
+        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+        const res = await fetch(`${apiBase}/api/heis/subjects/${id}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Approved' })
+        });
+
+        if (res.ok) {
+            setSubjects(subjects.map(s => s.id === id ? { ...s, status: 'Approved' } : s));
+        } else {
+            const data = await res.json();
+            alert(data.error || "Failed to approve subject");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Error approving subject");
     }
   };
 
-  // Decline Logic: DELETES the entry
-  const handleDecline = (id) => {
-    if(window.confirm("Decline this subject? This will delete the entry.")) {
-        setSubjects(subjects.filter(s => s.id !== id));
+  // Decline Logic: Updates status to 'Declined'
+  const handleDecline = async (id) => {
+    if(!window.confirm("Decline this subject?")) return;
+
+    try {
+        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+        const res = await fetch(`${apiBase}/api/heis/subjects/${id}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Declined' })
+        });
+
+        if (res.ok) {
+            setSubjects(subjects.map(s => s.id === id ? { ...s, status: 'Declined' } : s));
+        } else {
+            const data = await res.json();
+            alert(data.error || "Failed to decline subject");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Error declining subject");
     }
   };
 
@@ -209,7 +290,9 @@ const AdminSubjects = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {filteredSubjects.length === 0 ? (
+                        {loadingSubjects ? (
+                             <tr><td colSpan={activeTab === 'For Approval' ? 6 : 5} className="p-8 text-center text-gray-500">Loading subjects...</td></tr>
+                        ) : filteredSubjects.length === 0 ? (
                              <tr><td colSpan={activeTab === 'For Approval' ? 6 : 5} className="p-8 text-center text-gray-400 italic">No subjects found.</td></tr>
                         ) : (
                             filteredSubjects.map(sub => (
@@ -227,14 +310,24 @@ const AdminSubjects = () => {
                                     <td className="p-4 text-center">
                                         <span className={`px-2 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1
                                             ${sub.status === 'Approved' ? 'bg-green-100 text-green-700' : 
+                                              sub.status === 'Declined' ? 'bg-red-100 text-red-700' :
                                               'bg-orange-100 text-orange-700'}`}>
                                             {sub.status}
                                         </span>
                                     </td>
                                     <td className="p-4 text-center">
-                                        <button className="text-blue-600 hover:text-blue-800 text-xs font-bold border border-blue-200 bg-blue-50 px-3 py-1 rounded flex items-center gap-1 mx-auto">
-                                            <FileText size={12} /> View
-                                        </button>
+                                        {sub.syllabus_view_link ? (
+                                            <a 
+                                                href={sub.syllabus_view_link} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:text-blue-800 text-xs font-bold border border-blue-200 bg-blue-50 px-3 py-1 rounded flex items-center gap-1 mx-auto w-fit"
+                                            >
+                                                <FileText size={12} /> View
+                                            </a>
+                                        ) : (
+                                            <span className="text-gray-400 text-xs">No File</span>
+                                        )}
                                     </td>
                                     
                                     {/* ACTION BUTTONS (Only for For Approval) */}
@@ -250,7 +343,7 @@ const AdminSubjects = () => {
                                             <button 
                                                 onClick={() => handleDecline(sub.id)}
                                                 className="bg-red-100 text-red-700 p-2 rounded hover:bg-red-200 transition-colors" 
-                                                title="Decline (Delete)"
+                                                title="Decline"
                                             >
                                                 <XCircle size={16} />
                                             </button>

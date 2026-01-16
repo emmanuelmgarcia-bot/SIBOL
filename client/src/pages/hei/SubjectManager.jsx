@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const SubjectManager = () => {
   const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentId, setCurrentId] = useState(null);
-
+  
   // Form Initial State
   const initialFormState = {
     type: 'Integrated', // Default
@@ -26,31 +25,77 @@ const SubjectManager = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [saving, setSaving] = useState(false);
 
+  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+
+  const getHeiInfo = () => {
+      const userRaw = localStorage.getItem('sibol_user');
+      const user = userRaw ? JSON.parse(userRaw) : null;
+      return {
+          heiId: user?.hei_id,
+          campus: 'MAIN' // Default
+      };
+  };
+
+  const fetchSubjects = async () => {
+    const { heiId, campus } = getHeiInfo();
+    if (!heiId) return;
+
+    try {
+      setLoading(true);
+      const res = await fetch(`${apiBase}/api/heis/subjects?heiId=${encodeURIComponent(heiId)}&campus=${encodeURIComponent(campus)}`);
+      const data = await res.json();
+      if (res.ok) {
+        setSubjects(data);
+      } else {
+        console.error('Failed to fetch subjects:', data.error);
+      }
+    } catch (err) {
+      console.error('Error fetching subjects:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
+
   const openAddModal = () => {
     setFormData(initialFormState);
-    setIsEditing(false);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (subject) => {
-    setFormData({ ...initialFormState, ...subject });
-    setCurrentId(subject.id);
-    setIsEditing(true);
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Delete this item?")) {
-        setSubjects(subjects.filter(s => s.id !== id));
+        try {
+            const res = await fetch(`${apiBase}/api/heis/subjects/${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                setSubjects(subjects.filter(s => s.id !== id));
+            } else {
+                alert('Failed to delete subject');
+            }
+        } catch (err) {
+            console.error('Error deleting subject:', err);
+            alert('Error deleting subject');
+        }
     }
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    let syllabusMeta = null;
-    if (formData.syllabusFile) {
-      try {
+    
+    if (!formData.syllabusFile) {
+        alert('Please upload a syllabus file.');
+        return;
+    }
+
+    try {
         setSaving(true);
+        const { heiId, campus } = getHeiInfo();
+
+        // Convert file to base64
         const readerResult = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
@@ -58,63 +103,48 @@ const SubjectManager = () => {
           reader.readAsDataURL(formData.syllabusFile);
         });
         const base64 = typeof readerResult === 'string' ? readerResult.split(',')[1] : '';
-        const userRaw = localStorage.getItem('sibol_user');
-        const user = userRaw ? JSON.parse(userRaw) : null;
-        const heiId = user && user.hei_id ? user.hei_id : null;
-        const apiBase =
-          window.location.hostname === 'localhost'
-            ? 'http://localhost:5001'
-            : '';
-        const response = await fetch(`${apiBase}/api/heis/submissions`, {
+
+        const payload = {
+            heiId,
+            campus,
+            type: formData.type,
+            code: formData.code,
+            title: formData.title,
+            units: formData.units,
+            govtAuthority: formData.govtAuthority,
+            ayStarted: formData.ayStarted,
+            studentsAy1: formData.studentsAy1,
+            studentsAy2: formData.studentsAy2,
+            studentsAy3: formData.studentsAy3,
+            fileName: formData.syllabusFile.name,
+            mimeType: formData.syllabusFile.type || 'application/octet-stream',
+            fileBase64: base64
+        };
+
+        const response = await fetch(`${apiBase}/api/heis/subjects`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            heiId,
-            campus: 'MAIN',
-            formType: 'syllabus',
-            fileName: formData.syllabusFile.name,
-            mimeType: formData.syllabusFile.type || 'application/octet-stream',
-            fileBase64: base64
-          })
+          body: JSON.stringify(payload)
         });
+
         const data = await response.json();
         if (!response.ok) {
           throw new Error(data.error || 'Upload failed');
         }
-        syllabusMeta = {
-          name: formData.syllabusFile.name,
-          fileId: data.fileId,
-          viewUrl: data.webViewLink || data.webContentLink || null
-        };
-      } catch (err) {
-        console.error('Syllabus upload error:', err);
-        alert(err.message || 'Failed to upload syllabus file');
-      } finally {
+
+        // Add to list
+        setSubjects([data, ...subjects]);
+        setIsModalOpen(false);
+        alert('Subject submitted for approval!');
+
+    } catch (err) {
+        console.error('Subject upload error:', err);
+        alert(err.message || 'Failed to upload subject');
+    } finally {
         setSaving(false);
-      }
     }
-    const syllabusName = syllabusMeta ? syllabusMeta.name : (formData.syllabus || null);
-    const nextSubject = {
-      ...formData,
-      syllabus: syllabusName,
-      syllabusFileId: syllabusMeta ? syllabusMeta.fileId : null,
-      syllabusViewUrl: syllabusMeta ? syllabusMeta.viewUrl : null
-    };
-    if (isEditing) {
-      setSubjects(subjects.map(s => (s.id === currentId ? { ...s, ...nextSubject } : s)));
-    } else {
-      setSubjects([
-        ...subjects,
-        {
-          id: Date.now(),
-          ...nextSubject,
-          status: 'For Approval'
-        }
-      ]);
-    }
-    setIsModalOpen(false);
   };
 
   // Filter Logic
@@ -134,7 +164,7 @@ const SubjectManager = () => {
         
         <div className="flex items-center gap-3">
             <div className="bg-gray-100 p-1 rounded-lg flex text-sm font-medium">
-                {['All', 'Approved', 'For Approval'].map((tab) => (
+                {['All', 'Approved', 'For Approval', 'Declined'].map((tab) => (
                     <button key={tab} onClick={() => setActiveTab(tab)}
                         className={`px-3 py-1.5 rounded-md transition-all ${activeTab === tab ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                         {tab}
@@ -161,7 +191,9 @@ const SubjectManager = () => {
                 </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-                {filteredSubjects.length === 0 ? (
+                {loading ? (
+                     <tr><td colSpan="6" className="p-8 text-center text-gray-500">Loading...</td></tr>
+                ) : filteredSubjects.length === 0 ? (
                     <tr><td colSpan="6" className="p-8 text-center text-gray-400 italic">No items found.</td></tr>
                 ) : (
                     filteredSubjects.map(sub => (
@@ -177,26 +209,32 @@ const SubjectManager = () => {
                             <td className="p-4 font-bold text-gray-700">{sub.code}</td>
                             <td className="p-4 text-gray-600">
                                 <div>{sub.title}</div>
-                                {sub.type === 'Degree Program' && sub.govtAuthority && (
+                                {sub.type === 'Degree Program' && sub.govt_authority && (
                                     <div className="text-[10px] text-indigo-600 mt-1">
-                                        Auth: {sub.govtAuthority} | Students: {sub.studentsAy3 || 0}
+                                        Auth: {sub.govt_authority} | Students: {sub.students_ay3 || 0}
                                     </div>
                                 )}
                             </td>
                             <td className="p-4 text-center">
-                                <span className={`px-2 py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1 w-fit mx-auto ${sub.status === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'Approved' ? 'bg-green-500' : 'bg-orange-500'}`}></span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1 w-fit mx-auto ${
+                                    sub.status === 'Approved' ? 'bg-green-100 text-green-700' : 
+                                    sub.status === 'Declined' ? 'bg-red-100 text-red-700' :
+                                    'bg-orange-100 text-orange-700'
+                                }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${
+                                        sub.status === 'Approved' ? 'bg-green-500' : 
+                                        sub.status === 'Declined' ? 'bg-red-500' :
+                                        'bg-orange-500'
+                                    }`}></span>
                                     {sub.status}
                                 </span>
                             </td>
                             <td className="p-4 text-center">
-                                {sub.syllabus ? (
+                                {sub.syllabus_view_link ? (
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        if (sub.syllabusViewUrl) {
-                                          window.open(sub.syllabusViewUrl, '_blank', 'noopener,noreferrer');
-                                        }
+                                          window.open(sub.syllabus_view_link, '_blank', 'noopener,noreferrer');
                                       }}
                                       className="text-blue-600 hover:text-blue-800 text-xs font-bold border border-blue-200 bg-blue-50 px-3 py-1 rounded"
                                     >
@@ -205,8 +243,6 @@ const SubjectManager = () => {
                                 ) : <span className="text-gray-400 text-xs italic">No file</span>}
                             </td>
                             <td className="p-4 text-center space-x-2">
-                                <button onClick={() => openEditModal(sub)} className="text-gray-500 hover:text-blue-600 font-bold text-xs uppercase">Edit</button>
-                                <span className="text-gray-300">|</span>
                                 <button onClick={() => handleDelete(sub.id)} className="text-gray-500 hover:text-red-600 font-bold text-xs uppercase">Delete</button>
                             </td>
                         </tr>
@@ -221,7 +257,7 @@ const SubjectManager = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden">
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                    <h2 className="text-lg font-bold text-gray-800">{isEditing ? 'Edit Entry' : 'Add Entry'}</h2>
+                    <h2 className="text-lg font-bold text-gray-800">Add Entry</h2>
                     <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-red-500 font-bold text-2xl">&times;</button>
                 </div>
                 
@@ -259,7 +295,7 @@ const SubjectManager = () => {
                     {/* ALWAYS ASK FOR SYLLABUS */}
                     <div>
                         <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Upload Syllabus</label>
-                        <input type="file" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" onChange={(e) => setFormData({...formData, syllabusFile: e.target.files[0]})} />
+                        <input type="file" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" onChange={(e) => setFormData({...formData, syllabusFile: e.target.files[0]})} required />
                         <p className="text-[10px] text-gray-400 mt-1">Required for approval. PDF or DOCX.</p>
                     </div>
 

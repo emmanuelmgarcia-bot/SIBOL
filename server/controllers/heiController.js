@@ -101,4 +101,608 @@ const getSubmissions = async (req, res) => {
   }
 };
 
-module.exports = { getAllHeis, uploadSubmission, getSubmissions };
+const getMasterPrograms = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('program_master')
+      .select('id, code, title')
+      .order('code', { ascending: true });
+
+    if (error) {
+      console.error('Supabase program_master query error:', error.message);
+      return res.status(500).json({ error: 'Failed to load master programs: ' + error.message });
+    }
+
+    return res.status(200).json(data || []);
+  } catch (err) {
+    console.error('Get master programs exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const createMasterProgram = async (req, res) => {
+  try {
+    const { code, title } = req.body;
+
+    if (!code || !title) {
+      return res.status(400).json({ error: 'Program code and title are required' });
+    }
+
+    const trimmedCode = String(code).trim();
+    const trimmedTitle = String(title).trim();
+
+    const { data, error } = await supabase
+      .from('program_master')
+      .insert([
+        {
+          code: trimmedCode,
+          title: trimmedTitle
+        }
+      ])
+      .select('id, code, title')
+      .single();
+
+    if (error) {
+      console.error('Supabase create master program error:', error.message);
+      return res.status(500).json({ error: 'Failed to create program: ' + error.message });
+    }
+
+    return res.status(201).json(data);
+  } catch (err) {
+    console.error('Create master program exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const deleteMasterProgram = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Program id is required' });
+    }
+
+    const { error } = await supabase
+      .from('program_master')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase delete master program error:', error.message);
+      return res.status(500).json({ error: 'Failed to delete program: ' + error.message });
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('Delete master program exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const createProgramRequest = async (req, res) => {
+  try {
+    const {
+      heiId,
+      campus,
+      programCode,
+      programTitle,
+      fileName,
+      mimeType,
+      fileBase64
+    } = req.body;
+
+    if (!heiId || !campus || !programCode || !programTitle || !fileName || !mimeType || !fileBase64) {
+      return res.status(400).json({ error: 'Missing required fields for program request' });
+    }
+
+    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || undefined;
+
+    let fileData;
+    try {
+      fileData = await uploadBase64File({
+        fileName,
+        mimeType,
+        dataBase64: fileBase64,
+        folderId
+      });
+    } catch (uploadErr) {
+      console.error('Program request upload error:', uploadErr.message);
+      if (uploadErr.message && uploadErr.message.includes('Google service account credentials')) {
+        return res.status(500).json({ error: 'Google Drive credentials are not configured on the server' });
+      }
+      return res.status(500).json({ error: 'Failed to upload curriculum file' });
+    }
+
+    const { data, error } = await supabase
+      .from('program_requests')
+      .insert([
+        {
+          hei_id: heiId,
+          campus,
+          program_code: programCode,
+          program_title: programTitle,
+          file_id: fileData.id,
+          file_name: fileName,
+          web_view_link: fileData.webViewLink || null,
+          web_content_link: fileData.webContentLink || null,
+          status: 'For Approval'
+        }
+      ])
+      .select('id, hei_id, campus, program_code, program_title, status, file_name, web_view_link, web_content_link, created_at')
+      .single();
+
+    if (error) {
+      console.error('Supabase create program request error:', error.message);
+      return res.status(500).json({ error: 'Failed to save program request: ' + error.message });
+    }
+
+    return res.status(201).json(data);
+  } catch (err) {
+    console.error('Create program request exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const listProgramRequests = async (req, res) => {
+  try {
+    const { region, heiId, campus, status } = req.query;
+
+    if (!region && !heiId) {
+      return res.status(400).json({ error: 'Region or heiId is required' });
+    }
+
+    let heiIds = [];
+
+    if (region) {
+      let heiQuery = supabase
+        .from('heis')
+        .select('id, region')
+        .eq('region', region);
+
+      if (heiId) {
+        heiQuery = heiQuery.eq('id', heiId);
+      }
+
+      const { data: heisData, error: heisError } = await heiQuery;
+
+      if (heisError) {
+        console.error('Supabase heis for program requests error:', heisError.message);
+        return res.status(500).json({ error: 'Failed to load HEIs for program requests: ' + heisError.message });
+      }
+
+      heiIds = (heisData || []).map(h => h.id);
+
+      if (heiIds.length === 0) {
+        return res.status(200).json([]);
+      }
+    } else if (heiId) {
+      heiIds = [heiId];
+    }
+
+    let query = supabase
+      .from('program_requests')
+      .select('id, hei_id, campus, program_code, program_title, status, file_name, web_view_link, web_content_link, created_at');
+
+    if (heiIds.length > 0) {
+      query = query.in('hei_id', heiIds);
+    }
+
+    if (campus) {
+      query = query.eq('campus', campus);
+    }
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    query = query.order('created_at', { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Supabase list program requests error:', error.message);
+      return res.status(500).json({ error: 'Failed to load program requests: ' + error.message });
+    }
+
+    return res.status(200).json(data || []);
+  } catch (err) {
+    console.error('List program requests exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const updateProgramRequestStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, region } = req.body;
+
+    if (!id || !status) {
+      return res.status(400).json({ error: 'Request id and status are required' });
+    }
+
+    if (!['Approved', 'For Approval', 'Declined'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+
+    const { data: requestRow, error: requestError } = await supabase
+      .from('program_requests')
+      .select('id, hei_id')
+      .eq('id', id)
+      .single();
+
+    if (requestError) {
+      console.error('Supabase fetch program request error:', requestError.message);
+      return res.status(500).json({ error: 'Failed to load program request: ' + requestError.message });
+    }
+
+    if (!requestRow) {
+      return res.status(404).json({ error: 'Program request not found' });
+    }
+
+    if (region) {
+      const { data: heiRow, error: heiError } = await supabase
+        .from('heis')
+        .select('id, region')
+        .eq('id', requestRow.hei_id)
+        .single();
+
+      if (heiError) {
+        console.error('Supabase fetch hei for program request error:', heiError.message);
+        return res.status(500).json({ error: 'Failed to load HEI for program request: ' + heiError.message });
+      }
+
+      if (!heiRow) {
+        return res.status(404).json({ error: 'HEI not found for program request' });
+      }
+
+      if (heiRow.region !== region) {
+        return res.status(403).json({ error: 'Not allowed to modify program request from another region' });
+      }
+    }
+
+    const { error: updateError } = await supabase
+      .from('program_requests')
+      .update({ status })
+      .eq('id', id);
+
+    if (updateError) {
+      console.error('Supabase update program request status error:', updateError.message);
+      return res.status(500).json({ error: 'Failed to update program request status: ' + updateError.message });
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('Update program request status exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const getFaculty = async (req, res) => {
+  try {
+    const { heiId, campus } = req.query;
+
+    if (!heiId) {
+      return res.status(400).json({ error: 'heiId is required' });
+    }
+
+    let query = supabase
+      .from('faculty')
+      .select('*')
+      .eq('hei_id', heiId)
+      .order('name', { ascending: true });
+
+    if (campus) {
+      query = query.eq('campus', campus);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Supabase get faculty error:', error.message);
+      return res.status(500).json({ error: 'Failed to load faculty: ' + error.message });
+    }
+
+    return res.status(200).json(data || []);
+  } catch (err) {
+    console.error('Get faculty exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const createFaculty = async (req, res) => {
+  try {
+    const { heiId, campus, name, status, education } = req.body;
+
+    if (!heiId || !campus || !name || !status || !education) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    const { data, error } = await supabase
+      .from('faculty')
+      .insert([
+        {
+          hei_id: heiId,
+          campus,
+          name,
+          status,
+          education
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase create faculty error:', error.message);
+      return res.status(500).json({ error: 'Failed to add faculty: ' + error.message });
+    }
+
+    return res.status(201).json(data);
+  } catch (err) {
+    console.error('Create faculty exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const updateFaculty = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, status, education } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Faculty ID is required' });
+    }
+
+    const { data, error } = await supabase
+      .from('faculty')
+      .update({ name, status, education })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase update faculty error:', error.message);
+      return res.status(500).json({ error: 'Failed to update faculty: ' + error.message });
+    }
+
+    return res.status(200).json(data);
+  } catch (err) {
+    console.error('Update faculty exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const deleteFaculty = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Faculty ID is required' });
+    }
+
+    const { error } = await supabase
+      .from('faculty')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase delete faculty error:', error.message);
+      return res.status(500).json({ error: 'Failed to delete faculty: ' + error.message });
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('Delete faculty exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const createSubject = async (req, res) => {
+  try {
+    const {
+      heiId,
+      campus,
+      type,
+      code,
+      title,
+      units,
+      govtAuthority,
+      ayStarted,
+      studentsAy1,
+      studentsAy2,
+      studentsAy3,
+      fileName,
+      mimeType,
+      fileBase64
+    } = req.body;
+
+    if (!heiId || !campus || !type || !code || !title) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    let fileData = { id: null, webViewLink: null, webContentLink: null };
+    
+    // Only upload if file is provided
+    if (fileName && mimeType && fileBase64) {
+        const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || undefined;
+        try {
+            fileData = await uploadBase64File({
+                fileName,
+                mimeType,
+                dataBase64: fileBase64,
+                folderId
+            });
+        } catch (uploadErr) {
+            console.error('Subject syllabus upload error:', uploadErr.message);
+            // We might want to continue even if upload fails, or fail hard. 
+            // For now, let's fail hard if file upload was attempted but failed.
+            return res.status(500).json({ error: 'Failed to upload syllabus file: ' + uploadErr.message });
+        }
+    }
+
+    const { data, error } = await supabase
+      .from('subjects')
+      .insert([
+        {
+          hei_id: heiId,
+          campus,
+          type,
+          code,
+          title,
+          units: units || null,
+          govt_authority: govtAuthority || null,
+          ay_started: ayStarted || null,
+          students_ay1: studentsAy1 || null,
+          students_ay2: studentsAy2 || null,
+          students_ay3: studentsAy3 || null,
+          syllabus_file_id: fileData.id,
+          syllabus_file_name: fileName || null,
+          syllabus_view_link: fileData.webViewLink || null,
+          status: 'For Approval'
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase create subject error:', error.message);
+      return res.status(500).json({ error: 'Failed to save subject: ' + error.message });
+    }
+
+    return res.status(201).json(data);
+  } catch (err) {
+    console.error('Create subject exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const getSubjects = async (req, res) => {
+  try {
+    const { heiId, campus, region, status } = req.query;
+
+    let heiIds = [];
+
+    // If region is provided (Admin view), find HEIs in that region
+    if (region) {
+        const { data: heisData, error: heisError } = await supabase
+            .from('heis')
+            .select('id')
+            .eq('region', region);
+        
+        if (heisError) throw heisError;
+        heiIds = heisData.map(h => h.id);
+        
+        // If specific HEI selected within region
+        if (heiId) {
+            if (!heiIds.includes(parseInt(heiId)) && !heiIds.includes(heiId)) {
+                return res.status(200).json([]); // HEI not in region
+            }
+            heiIds = [heiId];
+        }
+    } else if (heiId) {
+        heiIds = [heiId];
+    } else {
+        return res.status(400).json({ error: 'Region or HEI ID required' });
+    }
+
+    if (heiIds.length === 0) return res.status(200).json([]);
+
+    let query = supabase
+      .from('subjects')
+      .select('*')
+      .in('hei_id', heiIds)
+      .order('created_at', { ascending: false });
+
+    if (campus) {
+      query = query.eq('campus', campus);
+    }
+    
+    if (status && status !== 'All') {
+        query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Supabase get subjects error:', error.message);
+      return res.status(500).json({ error: 'Failed to load subjects: ' + error.message });
+    }
+
+    return res.status(200).json(data || []);
+  } catch (err) {
+    console.error('Get subjects exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const updateSubjectStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!id || !status) {
+      return res.status(400).json({ error: 'ID and status are required' });
+    }
+
+    const { data, error } = await supabase
+      .from('subjects')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase update subject status error:', error.message);
+      return res.status(500).json({ error: 'Failed to update status: ' + error.message });
+    }
+
+    return res.status(200).json(data);
+  } catch (err) {
+    console.error('Update subject status exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const deleteSubject = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'ID is required' });
+    }
+
+    const { error } = await supabase
+      .from('subjects')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase delete subject error:', error.message);
+      return res.status(500).json({ error: 'Failed to delete subject: ' + error.message });
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('Delete subject exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+module.exports = {
+  getAllHeis,
+  uploadSubmission,
+  getSubmissions,
+  getMasterPrograms,
+  createMasterProgram,
+  deleteMasterProgram,
+  createProgramRequest,
+  listProgramRequests,
+  updateProgramRequestStatus,
+  getFaculty,
+  createFaculty,
+  updateFaculty,
+  deleteFaculty,
+  createSubject,
+  getSubjects,
+  updateSubjectStatus,
+  deleteSubject
+};
