@@ -19,33 +19,40 @@ const AdminSubmissions = () => {
       window.location.hostname === 'localhost'
         ? 'http://localhost:5000'
         : '';
-    fetch(`${apiBase}/api/heis`)
-      .then(res => res.json())
-      .then(data => {
+
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const region = user && user.assigned_region ? user.assigned_region : null;
+
+    if (!region) {
+      console.error('Missing assigned region for admin user, cannot load HEI directory');
+      setHeiList([]);
+      setLoading(false);
+      return;
+    }
+
+    fetch(`${apiBase}/api/registrations/hei-directory?region=${encodeURIComponent(region)}`)
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to load HEI directory');
+        }
         if (Array.isArray(data)) {
-          const grouped = data.reduce((acc, item) => {
-            const key = item.name;
-            if (!acc[key]) {
-              acc[key] = {
-                heiId: item.id,
-                hei: item.name,
-                campuses: []
-              };
-            }
-            if (item.campus && !acc[key].campuses.includes(item.campus)) {
-              acc[key].campuses.push(item.campus);
-            }
-            return acc;
-          }, {});
-          const list = Object.values(grouped);
-          list.forEach(entry => entry.campuses.sort());
+          const list = data.map(item => ({
+            heiId: item.heiId,
+            hei: item.hei,
+            campuses: Array.isArray(item.campuses) ? [...item.campuses].sort() : []
+          }));
           list.sort((a, b) => a.hei.localeCompare(b.hei));
           setHeiList(list);
+        } else {
+          setHeiList([]);
         }
         setLoading(false);
       })
       .catch(err => {
-        console.error('Error loading HEI data:', err);
+        console.error('Error loading HEI directory:', err);
+        setHeiList([]);
         setLoading(false);
       });
   }, []);
@@ -79,7 +86,7 @@ const AdminSubmissions = () => {
     }
     const apiBase =
       window.location.hostname === 'localhost'
-        ? 'http://localhost:5001'
+        ? 'http://localhost:5000'
         : '';
     const load = async () => {
       try {
@@ -97,7 +104,8 @@ const AdminSubmissions = () => {
           const entry = {
             id: item.id,
             name: item.file_name,
-            date: item.created_at
+            date: item.created_at,
+            fileId: item.file_id
           };
           if (item.form_type === 'form1') {
             form1.push(entry);
@@ -254,10 +262,30 @@ const AdminSubmissions = () => {
                             </div>
                             </td>
                             <td className="p-4 text-center flex justify-center gap-2">
-                            <button className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (item.fileId) {
+                                  const url = `https://drive.google.com/file/d/${item.fileId}/view`;
+                                  window.open(url, '_blank', 'noopener,noreferrer');
+                                }
+                              }}
+                              className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors"
+                            >
                                 <Eye size={14} /> View
                             </button>
-                            <button className="flex items-center gap-1 px-3 py-1.5 text-green-600 bg-green-50 hover:bg-green-100 rounded text-xs font-bold transition-colors">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const apiBase =
+                                  window.location.hostname === 'localhost'
+                                    ? 'http://localhost:5000'
+                                    : '';
+                                const url = `${apiBase}/api/heis/submissions/${item.id}/pdf`;
+                                window.open(url, '_blank');
+                              }}
+                              className="flex items-center gap-1 px-3 py-1.5 text-green-600 bg-green-50 hover:bg-green-100 rounded text-xs font-bold transition-colors"
+                            >
                                 <Download size={14} /> Download
                             </button>
                             </td>
@@ -294,10 +322,30 @@ const AdminSubmissions = () => {
                             </div>
                             </td>
                             <td className="p-4 text-center flex justify-center gap-2">
-                            <button className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (item.fileId) {
+                                  const url = `https://drive.google.com/file/d/${item.fileId}/view`;
+                                  window.open(url, '_blank', 'noopener,noreferrer');
+                                }
+                              }}
+                              className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors"
+                            >
                                 <Eye size={14} /> View
                             </button>
-                            <button className="flex items-center gap-1 px-3 py-1.5 text-green-600 bg-green-50 hover:bg-green-100 rounded text-xs font-bold transition-colors">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const apiBase =
+                                  window.location.hostname === 'localhost'
+                                    ? 'http://localhost:5000'
+                                    : '';
+                                const url = `${apiBase}/api/heis/submissions/${item.id}/pdf`;
+                                window.open(url, '_blank');
+                              }}
+                              className="flex items-center gap-1 px-3 py-1.5 text-green-600 bg-green-50 hover:bg-green-100 rounded text-xs font-bold transition-colors"
+                            >
                                 <Download size={14} /> Download
                             </button>
                             </td>

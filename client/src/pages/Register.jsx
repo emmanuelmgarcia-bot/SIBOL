@@ -35,6 +35,8 @@ const Register = () => {
     suffix: ''
   });
 
+  const [isManualBarangay, setIsManualBarangay] = useState(false);
+
   useEffect(() => {
     const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
     fetch(`${apiBase}/api/hei-data`)
@@ -278,18 +280,42 @@ const Register = () => {
 
                 {/* Barangay */}
                 <div>
-                    <Label text="Barangay" required />
-                    <select 
+                    <div className="flex items-center justify-between">
+                        <Label text="Barangay" required />
+                        <button
+                          type="button"
+                          className="text-[11px] font-semibold text-blue-600 hover:text-blue-700"
+                          onClick={() => {
+                            setIsManualBarangay(prev => !prev);
+                            setFormData(prev => ({ ...prev, barangay: '' }));
+                          }}
+                          disabled={!formData.city}
+                        >
+                          {isManualBarangay ? 'Use list' : 'Enter manually'}
+                        </button>
+                    </div>
+                    {isManualBarangay ? (
+                      <input
+                        type="text"
                         className="w-full p-2 border border-gray-300 rounded bg-white text-sm disabled:bg-gray-100"
                         value={formData.barangay}
-                        onChange={(e) => setFormData({...formData, barangay: e.target.value})}
+                        onChange={(e) => setFormData(prev => ({ ...prev, barangay: e.target.value }))}
+                        placeholder="Type barangay name"
                         disabled={!formData.city}
-                    >
-                        <option value="">Select Barangay</option>
-                        {barangayOptions.map((brgy, idx) => (
-                            <option key={idx} value={brgy.name}>{brgy.name}</option>
-                        ))}
-                    </select>
+                      />
+                    ) : (
+                      <select 
+                          className="w-full p-2 border border-gray-300 rounded bg-white text-sm disabled:bg-gray-100"
+                          value={formData.barangay}
+                          onChange={(e) => setFormData(prev => ({ ...prev, barangay: e.target.value }))}
+                          disabled={!formData.city}
+                      >
+                          <option value="">Select Barangay</option>
+                          {barangayOptions.map((brgy, idx) => (
+                              <option key={idx} value={brgy.name}>{brgy.name}</option>
+                          ))}
+                      </select>
+                    )}
                 </div>
             </div>
             

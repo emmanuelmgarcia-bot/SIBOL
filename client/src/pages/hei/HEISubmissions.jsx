@@ -17,7 +17,7 @@ const HEISubmissions = () => {
     }
     const apiBase =
       window.location.hostname === 'localhost'
-        ? 'http://localhost:5001'
+        ? 'http://localhost:5000'
         : '';
     const load = async () => {
       try {
@@ -32,7 +32,8 @@ const HEISubmissions = () => {
           const entry = {
             id: item.id,
             name: item.file_name,
-            date: item.created_at
+            date: item.created_at,
+            fileId: item.file_id
           };
           if (item.form_type === 'form1') {
             form1.push(entry);
@@ -116,10 +117,30 @@ const HEISubmissions = () => {
                       </div>
                     </td>
                     <td className="p-4 text-center flex justify-center gap-2">
-                      <button className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (item.fileId) {
+                            const url = `https://drive.google.com/file/d/${item.fileId}/view`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors"
+                      >
                           <Eye size={14} /> View
                       </button>
-                      <button className="flex items-center gap-1 px-3 py-1.5 text-green-600 bg-green-50 hover:bg-green-100 rounded text-xs font-bold transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const apiBase =
+                            window.location.hostname === 'localhost'
+                              ? 'http://localhost:5000'
+                              : '';
+                          const url = `${apiBase}/api/heis/submissions/${item.id}/pdf`;
+                          window.open(url, '_blank');
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-green-600 bg-green-50 hover:bg-green-100 rounded text-xs font-bold transition-colors"
+                      >
                           <Download size={14} /> Download
                       </button>
                     </td>
@@ -158,10 +179,30 @@ const HEISubmissions = () => {
                       </div>
                     </td>
                     <td className="p-4 text-center flex justify-center gap-2">
-                      <button className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (item.fileId) {
+                            const url = `https://drive.google.com/file/d/${item.fileId}/view`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors"
+                      >
                           <Eye size={14} /> View
                       </button>
-                      <button className="flex items-center gap-1 px-3 py-1.5 text-green-600 bg-green-50 hover:bg-green-100 rounded text-xs font-bold transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const apiBase =
+                            window.location.hostname === 'localhost'
+                              ? 'http://localhost:5000'
+                              : '';
+                          const url = `${apiBase}/api/heis/submissions/${item.id}/pdf`;
+                          window.open(url, '_blank');
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-green-600 bg-green-50 hover:bg-green-100 rounded text-xs font-bold transition-colors"
+                      >
                           <Download size={14} /> Download
                       </button>
                     </td>

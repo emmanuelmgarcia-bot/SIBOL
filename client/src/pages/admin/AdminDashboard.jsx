@@ -13,39 +13,40 @@ const AdminDashboard = () => {
   
   const wrapperRef = useRef(null);
 
-  // --- 1. FETCH DATA FROM BACKEND (Same as Register.jsx) ---
   useEffect(() => {
     const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
-    fetch(`${apiBase}/api/heis`)
-      .then(res => res.json())
-      .then(data => {
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const region = user && user.assigned_region ? user.assigned_region : null;
+
+    if (!region) {
+      console.error('Missing assigned region for admin user, cannot load HEI directory');
+      setHeiList([]);
+      setLoading(false);
+      return;
+    }
+
+    fetch(`${apiBase}/api/registrations/hei-directory?region=${encodeURIComponent(region)}`)
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to load HEI directory');
+        }
         if (Array.isArray(data)) {
-          // Transform the API's array into the Dashboard format
-          // From: [ { name: "ISU", campus: "Main" }, ... ]
-          // To:   [ { hei: "ISU", campuses: ["Main", ...] } ]
-          const grouped = data.reduce((acc, item) => {
-            const key = item.name;
-            if (!acc[key]) {
-              acc[key] = {
-                heiId: item.id,
-                hei: item.name,
-                campuses: []
-              };
-            }
-            if (item.campus && !acc[key].campuses.includes(item.campus)) {
-              acc[key].campuses.push(item.campus);
-            }
-            return acc;
-          }, {});
-          const parsedList = Object.values(grouped);
-          parsedList.forEach(entry => entry.campuses.sort());
+          const parsedList = data.map(item => ({
+            hei: item.hei,
+            campuses: Array.isArray(item.campuses) ? [...item.campuses].sort() : []
+          }));
           parsedList.sort((a, b) => a.hei.localeCompare(b.hei));
           setHeiList(parsedList);
+        } else {
+          setHeiList([]);
         }
         setLoading(false);
       })
       .catch(err => {
-        console.error("Error loading HEI data:", err);
+        console.error('Error loading HEI directory:', err);
+        setHeiList([]);
         setLoading(false);
       });
   }, []);

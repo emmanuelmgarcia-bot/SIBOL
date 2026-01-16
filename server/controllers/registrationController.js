@@ -83,6 +83,81 @@ const listRegistrationsByRegion = async (req, res) => {
   }
 };
 
+const listHeiCampusesByRegion = async (req, res) => {
+  try {
+    const { region } = req.query;
+
+    if (!region) {
+      return res.status(400).json({ error: 'Region is required' });
+    }
+
+    const { data: regData, error: regError } = await supabase
+      .from('registrations')
+      .select('hei_name, campus, region, status')
+      .eq('region', region)
+      .eq('status', 'Approved');
+
+    if (regError) {
+      console.error('Supabase hei directory registrations error:', regError.message);
+      return res.status(500).json({ error: 'Failed to load HEI directory: ' + regError.message });
+    }
+
+    const { data: heiData, error: heiError } = await supabase
+      .from('heis')
+      .select('id, name, campus, region')
+      .eq('region', region);
+
+    if (heiError) {
+      console.error('Supabase hei directory heis error:', heiError.message);
+      return res.status(500).json({ error: 'Failed to load HEI master list: ' + heiError.message });
+    }
+
+    const grouped = {};
+    const heiIndex = {};
+
+    (heiData || []).forEach(row => {
+      const key = `${(row.name || '').trim().toLowerCase()}|${(row.campus || '').trim().toLowerCase()}`;
+      heiIndex[key] = row;
+    });
+
+    (regData || []).forEach(item => {
+      const hei = item.hei_name;
+      const campus = item.campus;
+      if (!hei) {
+        return;
+      }
+      const matchKey = `${(hei || '').trim().toLowerCase()}|${(campus || '').trim().toLowerCase()}`;
+      const heiRow = heiIndex[matchKey];
+      if (!heiRow) {
+        return;
+      }
+      const groupKey = heiRow.id;
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = {
+          heiId: heiRow.id,
+          hei: heiRow.name,
+          campuses: [],
+          region: heiRow.region || item.region
+        };
+      }
+      const campusValue = campus || heiRow.campus;
+      if (campusValue && !grouped[groupKey].campuses.includes(campusValue)) {
+        grouped[groupKey].campuses.push(campusValue);
+      }
+    });
+
+    Object.values(grouped).forEach(entry => {
+      entry.campuses.sort((a, b) => a.localeCompare(b));
+    });
+
+    const list = Object.values(grouped).sort((a, b) => a.hei.localeCompare(b.hei));
+
+    return res.status(200).json(list);
+  } catch (err) {
+    console.error('List HEI campuses exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
 const approveRegistration = async (req, res) => {
   try {
     const { id } = req.params;
@@ -176,7 +251,7 @@ const deleteRegistration = async (req, res) => {
 module.exports = {
   createRegistration,
   listRegistrationsByRegion,
+  listHeiCampusesByRegion,
   approveRegistration,
   deleteRegistration
 };
-

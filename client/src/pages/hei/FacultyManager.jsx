@@ -1,18 +1,127 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const FacultyManager = () => {
-  const [faculty, setFaculty] = useState([
-    { id: 1, name: 'Dr. Maria Santos', status: 'Permanent', education: 'Doctoral' },
-    { id: 2, name: 'Mr. John Doe', status: 'Temporary', education: 'Master\'s' },
-  ]);
-
+  const [faculty, setFaculty] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({ name: '', status: 'Permanent', education: 'Bachelor\'s' });
+  const [formData, setFormData] = useState({ id: null, name: '', status: 'Permanent', education: 'Bachelor\'s' });
+  const [filter, setFilter] = useState('All');
+
+  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+
+  const getHeiInfo = () => {
+      const userRaw = localStorage.getItem('sibol_user');
+      const user = userRaw ? JSON.parse(userRaw) : null;
+      return {
+          heiId: user?.hei_id,
+          campus: 'MAIN' // Default or fetch from user if available. Ideally this should come from user profile.
+      };
+  };
+
+  const fetchFaculty = async () => {
+    const { heiId, campus } = getHeiInfo();
+    if (!heiId) return;
+
+    try {
+      setLoading(true);
+      const res = await fetch(`${apiBase}/api/heis/faculty?heiId=${encodeURIComponent(heiId)}&campus=${encodeURIComponent(campus)}`);
+      const data = await res.json();
+      if (res.ok) {
+        setFaculty(data);
+      } else {
+        console.error('Failed to fetch faculty:', data.error);
+      }
+    } catch (err) {
+      console.error('Error fetching faculty:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFaculty();
+  }, []);
 
   const handleEdit = (fac) => {
     setFormData(fac);
     setEditMode(true);
   };
+
+  const handleDelete = async (id) => {
+      if (!window.confirm('Are you sure you want to delete this faculty member?')) return;
+      
+      try {
+          const res = await fetch(`${apiBase}/api/heis/faculty/${id}`, {
+              method: 'DELETE'
+          });
+          
+          if (res.ok) {
+              fetchFaculty();
+          } else {
+              const data = await res.json();
+              alert('Failed to delete: ' + (data.error || 'Unknown error'));
+          }
+      } catch (err) {
+          console.error('Error deleting:', err);
+          alert('Error deleting faculty');
+      }
+  };
+
+  const handleSubmit = async () => {
+      const { heiId, campus } = getHeiInfo();
+      if (!heiId) {
+          alert('User not authenticated correctly (missing HEI ID)');
+          return;
+      }
+
+      if (!formData.name) {
+          alert('Please enter a name');
+          return;
+      }
+
+      try {
+          let url = `${apiBase}/api/heis/faculty`;
+          let method = 'POST';
+          let body = {
+              heiId,
+              campus,
+              name: formData.name,
+              status: formData.status,
+              education: formData.education
+          };
+
+          if (editMode && formData.id) {
+              url = `${apiBase}/api/heis/faculty/${formData.id}`;
+              method = 'PUT';
+              body = {
+                  name: formData.name,
+                  status: formData.status,
+                  education: formData.education
+              };
+          }
+
+          const res = await fetch(url, {
+              method,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+              alert(editMode ? 'Faculty updated!' : 'Faculty added!');
+              setEditMode(false);
+              setFormData({ id: null, name: '', status: 'Permanent', education: 'Bachelor\'s' });
+              fetchFaculty();
+          } else {
+              alert('Failed to save: ' + (data.error || 'Unknown error'));
+          }
+      } catch (err) {
+          console.error('Error saving faculty:', err);
+          alert('Error saving faculty');
+      }
+  };
+
+  const filteredFaculty = filter === 'All' ? faculty : faculty.filter(f => f.status === filter);
 
   return (
     <div className="space-y-6">
@@ -22,11 +131,36 @@ const FacultyManager = () => {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="font-bold text-gray-700">Faculty List</h3>
-          <div className="text-xs space-x-2">
-            <span>Filter By:</span>
-            <label><input type="radio" name="filter" /> Permanent</label>
-            <label><input type="radio" name="filter" /> Temporary</label>
+          <h3 className="font-bold text-gray-700">Faculty List {loading && <span className="text-sm font-normal text-gray-500">(Loading...)</span>}</h3>
+          <div className="text-xs space-x-2 flex items-center">
+            <span className="mr-2">Filter By:</span>
+            <label className="cursor-pointer flex items-center space-x-1">
+                <input 
+                    type="radio" 
+                    name="filter" 
+                    checked={filter === 'All'} 
+                    onChange={() => setFilter('All')} 
+                /> 
+                <span>All</span>
+            </label>
+            <label className="cursor-pointer flex items-center space-x-1">
+                <input 
+                    type="radio" 
+                    name="filter" 
+                    checked={filter === 'Permanent'} 
+                    onChange={() => setFilter('Permanent')} 
+                /> 
+                <span>Permanent</span>
+            </label>
+            <label className="cursor-pointer flex items-center space-x-1">
+                <input 
+                    type="radio" 
+                    name="filter" 
+                    checked={filter === 'Temporary'} 
+                    onChange={() => setFilter('Temporary')} 
+                /> 
+                <span>Temporary</span>
+            </label>
           </div>
         </div>
         
@@ -40,17 +174,25 @@ const FacultyManager = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {faculty.map((fac) => (
-              <tr key={fac.id} className="hover:bg-gray-50 group">
-                <td className="px-6 py-3 font-medium">{fac.name}</td>
-                <td className="px-6 py-3 text-gray-500">{fac.status}</td>
-                <td className="px-6 py-3 text-gray-500">{fac.education}</td>
-                <td className="px-6 py-3 text-right">
-                  <button onClick={() => handleEdit(fac)} className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3">Edit</button>
-                  <button className="text-red-400 hover:text-red-600 text-sm">Delete</button>
-                </td>
-              </tr>
-            ))}
+            {filteredFaculty.length === 0 ? (
+                <tr>
+                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                        {loading ? 'Loading faculty...' : 'No faculty members found.'}
+                    </td>
+                </tr>
+            ) : (
+                filteredFaculty.map((fac) => (
+                <tr key={fac.id} className="hover:bg-gray-50 group">
+                    <td className="px-6 py-3 font-medium">{fac.name}</td>
+                    <td className="px-6 py-3 text-gray-500">{fac.status}</td>
+                    <td className="px-6 py-3 text-gray-500">{fac.education}</td>
+                    <td className="px-6 py-3 text-right">
+                    <button onClick={() => handleEdit(fac)} className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3">Edit</button>
+                    <button onClick={() => handleDelete(fac.id)} className="text-red-400 hover:text-red-600 text-sm">Delete</button>
+                    </td>
+                </tr>
+                ))
+            )}
           </tbody>
         </table>
       </div>
@@ -108,11 +250,11 @@ const FacultyManager = () => {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
              {editMode && (
-                <button onClick={() => {setEditMode(false); setFormData({name:'', status:'Permanent', education:'Bachelor\'s'})}} className="px-6 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">
+                <button onClick={() => {setEditMode(false); setFormData({id: null, name:'', status:'Permanent', education:'Bachelor\'s'})}} className="px-6 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">
                     Cancel
                 </button>
              )}
-            <button className="bg-blue-600 text-white px-8 py-2 rounded-md hover:bg-blue-700 shadow-sm transition-all">
+            <button onClick={handleSubmit} className="bg-blue-600 text-white px-8 py-2 rounded-md hover:bg-blue-700 shadow-sm transition-all">
               {editMode ? 'Update' : 'Add'}
             </button>
           </div>

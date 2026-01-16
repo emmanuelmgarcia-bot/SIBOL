@@ -11,19 +11,70 @@ const AdminPrograms = () => {
   const [newProgram, setNewProgram] = useState({ code: '', title: '' });
   const [masterSearch, setMasterSearch] = useState(''); // NEW: Search State
 
-  // HANDLERS: Master List
-  const handleAddProgram = (e) => {
+  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+
+  useEffect(() => {
+    fetch(`${apiBase}/api/heis/programs/master`)
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to load master programs');
+        }
+        if (Array.isArray(data)) {
+          setMasterPrograms(data);
+        } else {
+          setMasterPrograms([]);
+        }
+      })
+      .catch(err => {
+        console.error('Error loading master programs:', err);
+        setMasterPrograms([]);
+      });
+  }, [apiBase]);
+
+  const handleAddProgram = async (e) => {
     e.preventDefault();
-    if (newProgram.code && newProgram.title) {
-        setMasterPrograms([...masterPrograms, { id: Date.now(), ...newProgram }]);
-        setNewProgram({ code: '', title: '' });
-        setIsAddModalOpen(false);
+    if (!newProgram.code || !newProgram.title) {
+      return;
+    }
+    try {
+      const res = await fetch(`${apiBase}/api/heis/programs/master`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: newProgram.code,
+          title: newProgram.title
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to add program');
+      }
+      setMasterPrograms([...masterPrograms, data]);
+      setNewProgram({ code: '', title: '' });
+      setIsAddModalOpen(false);
+    } catch (err) {
+      console.error('Add master program error:', err);
+      alert(err.message || 'Failed to add program');
     }
   };
 
-  const handleDeleteMaster = (id) => {
-    if(window.confirm("Delete this program from the master list?")) {
-        setMasterPrograms(masterPrograms.filter(p => p.id !== id));
+  const handleDeleteMaster = async (id) => {
+    if (!window.confirm("Delete this program from the master list?")) {
+      return;
+    }
+    try {
+      const res = await fetch(`${apiBase}/api/heis/programs/master/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete program');
+      }
+      setMasterPrograms(masterPrograms.filter(p => p.id !== id));
+    } catch (err) {
+      console.error('Delete master program error:', err);
+      alert(err.message || 'Failed to delete program');
     }
   };
 
@@ -49,36 +100,39 @@ const AdminPrograms = () => {
   
   const [programs, setPrograms] = useState([]);
 
-  // FETCH HEI DATA
   useEffect(() => {
-    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
-    fetch(`${apiBase}/api/heis`)
-      .then(res => res.json())
-      .then(data => {
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const region = user && user.assigned_region ? user.assigned_region : null;
+
+    if (!region) {
+      console.error('Missing assigned region for admin user, cannot load HEI directory');
+      setHeiList([]);
+      setLoading(false);
+      return;
+    }
+
+    fetch(`${apiBase}/api/registrations/hei-directory?region=${encodeURIComponent(region)}`)
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to load HEI directory');
+        }
         if (Array.isArray(data)) {
-          const grouped = data.reduce((acc, item) => {
-            const key = item.name;
-            if (!acc[key]) {
-              acc[key] = {
-                heiId: item.id,
-                hei: item.name,
-                campuses: []
-              };
-            }
-            if (item.campus && !acc[key].campuses.includes(item.campus)) {
-              acc[key].campuses.push(item.campus);
-            }
-            return acc;
-          }, {});
-          const list = Object.values(grouped);
-          list.forEach(entry => entry.campuses.sort());
+          const list = data.map(item => ({
+            hei: item.hei,
+            campuses: Array.isArray(item.campuses) ? [...item.campuses].sort() : []
+          }));
           list.sort((a, b) => a.hei.localeCompare(b.hei));
           setHeiList(list);
+        } else {
+          setHeiList([]);
         }
         setLoading(false);
       })
       .catch(err => {
-        console.error("Error loading HEI data:", err);
+        console.error('Error loading HEI directory:', err);
+        setHeiList([]);
         setLoading(false);
       });
   }, []);
@@ -106,16 +160,106 @@ const AdminPrograms = () => {
     item.hei.toLowerCase().includes(heiSearch.toLowerCase())
   );
 
-  // Handlers: HEI Approval
-  const handleApprove = (id) => {
-    if(window.confirm("Approve this program curriculum?")) {
-        setPrograms(programs.map(p => p.id === id ? { ...p, status: 'Approved' } : p));
+  useEffect(() => {
+    if (!selectedHei || !selectedCampus) {
+      setPrograms([]);
+      return;
+    }
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const region = user && user.assigned_region ? user.assigned_region : null;
+
+    if (!region) {
+      setPrograms([]);
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.append('region', region);
+    params.append('heiId', selectedHei.heiId);
+    params.append('campus', selectedCampus);
+    if (activeTab !== 'All') {
+      params.append('status', activeTab);
+    }
+
+    fetch(`${apiBase}/api/heis/programs/requests?${params.toString()}`)
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to load program requests');
+        }
+        if (Array.isArray(data)) {
+          const mapped = data.map(item => ({
+            id: item.id,
+            code: item.program_code,
+            title: item.program_title,
+            status: item.status,
+            curriculumViewUrl: item.web_view_link || item.web_content_link || null
+          }));
+          setPrograms(mapped);
+        } else {
+          setPrograms([]);
+        }
+      })
+      .catch(err => {
+        console.error('Error loading program requests:', err);
+        setPrograms([]);
+      });
+  }, [apiBase, selectedHei, selectedCampus, activeTab]);
+
+  const handleApprove = async (id) => {
+    if (!window.confirm("Approve this program curriculum?")) {
+      return;
+    }
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const region = user && user.assigned_region ? user.assigned_region : null;
+    if (!region) {
+      alert('Missing assigned region. Cannot approve program request.');
+      return;
+    }
+    try {
+      const res = await fetch(`${apiBase}/api/heis/programs/requests/${encodeURIComponent(id)}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Approved', region })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to approve program request');
+      }
+      setPrograms(programs.map(p => p.id === id ? { ...p, status: 'Approved' } : p));
+    } catch (err) {
+      console.error('Approve program request error:', err);
+      alert(err.message || 'Failed to approve program request');
     }
   };
 
-  const handleDecline = (id) => {
-    if(window.confirm("Decline this program? This will delete the entry.")) {
-        setPrograms(programs.filter(p => p.id !== id));
+  const handleDecline = async (id) => {
+    if (!window.confirm("Decline this program?")) {
+      return;
+    }
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const region = user && user.assigned_region ? user.assigned_region : null;
+    if (!region) {
+      alert('Missing assigned region. Cannot decline program request.');
+      return;
+    }
+    try {
+      const res = await fetch(`${apiBase}/api/heis/programs/requests/${encodeURIComponent(id)}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Declined', region })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to decline program request');
+      }
+      setPrograms(programs.map(p => p.id === id ? { ...p, status: 'Declined' } : p));
+    } catch (err) {
+      console.error('Decline program request error:', err);
+      alert(err.message || 'Failed to decline program request');
     }
   };
 
@@ -332,9 +476,16 @@ const AdminPrograms = () => {
                                             </span>
                                         </td>
                                         <td className="p-4 text-center">
-                                            <button className="text-indigo-600 hover:text-indigo-800 text-xs font-bold border border-indigo-200 bg-indigo-50 px-3 py-1 rounded flex items-center gap-1 mx-auto">
+                                            {prog.curriculumViewUrl ? (
+                                              <button
+                                                className="text-indigo-600 hover:text-indigo-800 text-xs font-bold border border-indigo-200 bg-indigo-50 px-3 py-1 rounded flex items-center gap-1 mx-auto"
+                                                onClick={() => window.open(prog.curriculumViewUrl, '_blank', 'noopener,noreferrer')}
+                                              >
                                                 <FileText size={12} /> View
-                                            </button>
+                                              </button>
+                                            ) : (
+                                              <span className="text-xs text-gray-400">No file</span>
+                                            )}
                                         </td>
                                         
                                         {activeTab === 'For Approval' && (

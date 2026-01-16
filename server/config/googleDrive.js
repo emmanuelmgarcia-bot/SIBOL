@@ -19,11 +19,12 @@ const getDriveClient = () => {
   return google.drive({ version: 'v3', auth });
 };
 
-const uploadBase64File = async ({ fileName, mimeType, dataBase64, folderId }) => {
+const uploadBase64File = async ({ fileName, mimeType, dataBase64, folderId, driveMimeType }) => {
   const drive = getDriveClient();
   const fileMetadata = {
     name: fileName,
-    parents: folderId ? [folderId] : undefined
+    parents: folderId ? [folderId] : undefined,
+    mimeType: driveMimeType || undefined
   };
   const media = {
     mimeType,
@@ -32,12 +33,24 @@ const uploadBase64File = async ({ fileName, mimeType, dataBase64, folderId }) =>
   const response = await drive.files.create({
     requestBody: fileMetadata,
     media,
-    fields: 'id, webViewLink, webContentLink'
+    fields: 'id, webViewLink, webContentLink, mimeType'
   });
   return response.data;
 };
 
-module.exports = {
-  uploadBase64File
+const exportFileAsPdf = async (fileId) => {
+  const drive = getDriveClient();
+  const res = await drive.files.export(
+    {
+      fileId,
+      mimeType: 'application/pdf'
+    },
+    { responseType: 'arraybuffer' }
+  );
+  return Buffer.from(res.data);
 };
 
+module.exports = {
+  uploadBase64File,
+  exportFileAsPdf
+};

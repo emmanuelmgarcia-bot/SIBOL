@@ -44,7 +44,7 @@ const Form1 = () => {
       const heiId = user && user.hei_id ? user.hei_id : null;
       const apiBase =
         window.location.hostname === 'localhost'
-          ? 'http://localhost:5001'
+          ? 'http://localhost:5000'
           : '';
       const response = await fetch(`${apiBase}/api/heis/submissions`, {
         method: 'POST',

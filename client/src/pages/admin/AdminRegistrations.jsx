@@ -25,32 +25,33 @@ const AdminRegistrations = () => {
     const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
     const load = async () => {
       try {
-        const heiRes = await fetch(`${apiBase}/api/heis`);
-        const heiData = await heiRes.json();
-        if (Array.isArray(heiData)) {
-          const grouped = heiData.reduce((acc, item) => {
-            const key = item.name;
-            if (!acc[key]) {
-              acc[key] = {
-                heiId: item.id,
-                hei: item.name,
-                campuses: []
-              };
-            }
-            if (item.campus && !acc[key].campuses.includes(item.campus)) {
-              acc[key].campuses.push(item.campus);
-            }
-            return acc;
-          }, {});
-          const list = Object.values(grouped);
-          list.forEach(entry => entry.campuses.sort());
-          list.sort((a, b) => a.hei.localeCompare(b.hei));
-          setHeiList(list);
-        }
-
         const userRaw = localStorage.getItem('sibol_user');
         const user = userRaw ? JSON.parse(userRaw) : null;
         const region = user && user.assigned_region ? user.assigned_region : null;
+
+        if (!region) {
+          console.error('Missing assigned region for admin user, cannot load HEI directory or registrations');
+          setHeiList([]);
+          setRegistrations([]);
+          setLoading(false);
+          return;
+        }
+
+        const heiRes = await fetch(`${apiBase}/api/registrations/hei-directory?region=${encodeURIComponent(region)}`);
+        const heiData = await heiRes.json();
+        if (!heiRes.ok) {
+          throw new Error(heiData.error || 'Failed to load HEI directory');
+        }
+        if (Array.isArray(heiData)) {
+          const list = heiData.map(item => ({
+            hei: item.hei,
+            campuses: Array.isArray(item.campuses) ? [...item.campuses].sort() : []
+          }));
+          list.sort((a, b) => a.hei.localeCompare(b.hei));
+          setHeiList(list);
+        } else {
+          setHeiList([]);
+        }
 
         if (region) {
           const regRes = await fetch(`${apiBase}/api/registrations?region=${encodeURIComponent(region)}`);

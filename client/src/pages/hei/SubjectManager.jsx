@@ -91,6 +91,16 @@ const SubjectManager = () => {
         return;
     }
 
+    const file = formData.syllabusFile;
+    const isPdf =
+      (file.type && file.type.toLowerCase().includes('pdf')) ||
+      (file.name && file.name.toLowerCase().endsWith('.pdf'));
+
+    if (!isPdf) {
+        alert('Please upload a PDF file for the syllabus.');
+        return;
+    }
+
     try {
         setSaving(true);
         const { heiId, campus } = getHeiInfo();
@@ -117,7 +127,7 @@ const SubjectManager = () => {
             studentsAy2: formData.studentsAy2,
             studentsAy3: formData.studentsAy3,
             fileName: formData.syllabusFile.name,
-            mimeType: formData.syllabusFile.type || 'application/octet-stream',
+            mimeType: formData.syllabusFile.type || 'application/pdf',
             fileBase64: base64
         };
 
@@ -294,9 +304,15 @@ const SubjectManager = () => {
 
                     {/* ALWAYS ASK FOR SYLLABUS */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Upload Syllabus</label>
-                        <input type="file" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" onChange={(e) => setFormData({...formData, syllabusFile: e.target.files[0]})} required />
-                        <p className="text-[10px] text-gray-400 mt-1">Required for approval. PDF or DOCX.</p>
+                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Upload Syllabus (PDF only)</label>
+                        <input
+                            type="file"
+                            accept="application/pdf"
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                            onChange={(e) => setFormData({...formData, syllabusFile: e.target.files[0]})}
+                            required
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1">Required for approval. PDF files only.</p>
                     </div>
 
                     {/* --- CONDITIONAL: STANDARD SUBJECTS (UNITS) --- */}

@@ -1,5 +1,7 @@
 const supabase = require('../config/supabase');
-const { uploadBase64File } = require('../config/googleDrive');
+const { uploadBase64File, exportFileAsPdf } = require('../config/googleDrive');
+const ExcelJS = require('exceljs');
+const path = require('path');
 
 const getAllHeis = async (req, res) => {
   try {
@@ -22,16 +24,184 @@ const getAllHeis = async (req, res) => {
 const uploadSubmission = async (req, res) => {
   try {
     const { heiId, campus, formType, fileName, mimeType, fileBase64 } = req.body;
+
     if (!heiId || !campus || !formType || !fileName || !mimeType || !fileBase64) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || undefined;
+
+    let finalFileName = fileName;
+    let finalMimeType = mimeType;
+    let finalBase64 = fileBase64;
+
+    if (formType === 'form1' || formType === 'form2') {
+      let jsonString;
+      try {
+        jsonString = Buffer.from(fileBase64, 'base64').toString('utf8');
+      } catch (decodeErr) {
+        console.error('Decode form JSON error:', decodeErr.message);
+        return res.status(400).json({ error: 'Invalid form data' });
+      }
+
+      let payload;
+      try {
+        payload = JSON.parse(jsonString);
+      } catch (parseErr) {
+        console.error('Parse form JSON error:', parseErr.message);
+        return res.status(400).json({ error: 'Invalid form JSON payload' });
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      const templatePath = path.join(
+        __dirname,
+        '..',
+        'data',
+        formType === 'form1' ? 'Form 1.xlsx' : 'Form 2.xlsx'
+      );
+
+      try {
+        await workbook.xlsx.readFile(templatePath);
+      } catch (templateErr) {
+        console.error('Load Excel template error:', templateErr.message);
+        return res.status(500).json({ error: 'Failed to load Excel template' });
+      }
+
+      const sheet = workbook.worksheets[0];
+
+      if (!sheet) {
+        return res.status(500).json({ error: 'Excel template is missing worksheet' });
+      }
+
+      if (formType === 'form1') {
+        const integrated = Array.isArray(payload.integrated) ? payload.integrated : [];
+        const elective = Array.isArray(payload.elective) ? payload.elective : [];
+
+        const startRowIntegrated = 12;
+        integrated.forEach((row, index) => {
+          const excelRow = sheet.getRow(startRowIntegrated + index);
+          excelRow.getCell('B').value = row.subject || '';
+          excelRow.getCell('C').value = row.units || '';
+          excelRow.getCell('D').value = row.program || '';
+          excelRow.getCell('F').value = row.faculty || '';
+          excelRow.getCell('H').value = row.status || '';
+          if (row.education === 'Bachelors') {
+            excelRow.getCell('J').value = '✔';
+          } else if (row.education === 'Masters') {
+            excelRow.getCell('K').value = '✔';
+          } else if (row.education === 'Doctoral') {
+            excelRow.getCell('L').value = '✔';
+          }
+          excelRow.commit();
+        });
+
+        const startRowElective = 23;
+        elective.forEach((row, index) => {
+          const excelRow = sheet.getRow(startRowElective + index);
+          excelRow.getCell('B').value = row.subject || '';
+          excelRow.getCell('C').value = row.units || '';
+          excelRow.getCell('D').value = row.program || '';
+          excelRow.getCell('F').value = row.faculty || '';
+          excelRow.getCell('H').value = row.status || '';
+          if (row.education === 'Bachelors') {
+            excelRow.getCell('J').value = '✔';
+          } else if (row.education === 'Masters') {
+            excelRow.getCell('K').value = '✔';
+          } else if (row.education === 'Doctoral') {
+            excelRow.getCell('L').value = '✔';
+          }
+          excelRow.commit();
+        });
+      } else if (formType === 'form2') {
+        const integrated = Array.isArray(payload.integrated) ? payload.integrated : [];
+        const elective = Array.isArray(payload.elective) ? payload.elective : [];
+        const programs = Array.isArray(payload.programs) ? payload.programs : [];
+
+        const startRowIntegrated = 12;
+        integrated.forEach((row, index) => {
+          const excelRow = sheet.getRow(startRowIntegrated + index);
+          excelRow.getCell('B').value = row.subject || '';
+          excelRow.getCell('C').value = row.units || '';
+          excelRow.getCell('D').value = row.program || '';
+          excelRow.getCell('F').value = row.faculty || '';
+          excelRow.getCell('H').value = row.status || '';
+          if (row.education === 'Bachelors') {
+            excelRow.getCell('J').value = '✔';
+          } else if (row.education === 'Masters') {
+            excelRow.getCell('K').value = '✔';
+          } else if (row.education === 'Doctoral') {
+            excelRow.getCell('L').value = '✔';
+          }
+          excelRow.commit();
+        });
+
+        const startRowElective = 23;
+        elective.forEach((row, index) => {
+          const excelRow = sheet.getRow(startRowElective + index);
+          excelRow.getCell('B').value = row.subject || '';
+          excelRow.getCell('C').value = row.units || '';
+          excelRow.getCell('D').value = row.program || '';
+          excelRow.getCell('F').value = row.faculty || '';
+          excelRow.getCell('H').value = row.status || '';
+          if (row.education === 'Bachelors') {
+            excelRow.getCell('J').value = '✔';
+          } else if (row.education === 'Masters') {
+            excelRow.getCell('K').value = '✔';
+          } else if (row.education === 'Doctoral') {
+            excelRow.getCell('L').value = '✔';
+          }
+          excelRow.commit();
+        });
+
+        const startRowPrograms = 34;
+        programs.forEach((row, index) => {
+          const excelRow = sheet.getRow(startRowPrograms + index);
+          excelRow.getCell('B').value = row.subject || '';
+          excelRow.getCell('C').value = row.govtAuthority || row.govt_authority || '';
+          excelRow.getCell('D').value = row.ayStarted || row.ay_started || '';
+          excelRow.getCell('E').value = row.studentsAy1 || row.students_ay1 || '';
+          excelRow.getCell('F').value = row.studentsAy2 || row.students_ay2 || '';
+          excelRow.getCell('G').value = row.studentsAy3 || row.students_ay3 || '';
+          excelRow.getCell('H').value = row.faculty || '';
+          excelRow.getCell('I').value = row.status || '';
+          if (row.education === 'Bachelors') {
+            excelRow.getCell('J').value = '✔';
+          } else if (row.education === 'Masters') {
+            excelRow.getCell('K').value = '✔';
+          } else if (row.education === 'Doctoral') {
+            excelRow.getCell('L').value = '✔';
+          }
+          excelRow.commit();
+        });
+      }
+
+      let buffer;
+      try {
+        buffer = await workbook.xlsx.writeBuffer();
+      } catch (writeErr) {
+        console.error('Excel write buffer error:', writeErr.message);
+        return res.status(500).json({ error: 'Failed to generate Excel file' });
+      }
+
+      finalBase64 = buffer.toString('base64');
+      finalMimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const today = new Date().toISOString().slice(0, 10);
+      finalFileName = formType === 'form1'
+        ? `Form 1 - ${today}.xlsx`
+        : `Form 2 - ${today}.xlsx`;
+    }
+
     const fileData = await uploadBase64File({
-      fileName,
-      mimeType,
-      dataBase64: fileBase64,
-      folderId
+      fileName: finalFileName,
+      mimeType: finalMimeType,
+      dataBase64: finalBase64,
+      folderId,
+      driveMimeType:
+        formType === 'form1' || formType === 'form2'
+          ? 'application/vnd.google-apps.spreadsheet'
+          : undefined
     });
+
     let dbSaved = false;
     try {
       const { error } = await supabase
@@ -42,7 +212,7 @@ const uploadSubmission = async (req, res) => {
             campus,
             form_type: formType,
             file_id: fileData.id,
-            file_name: fileName
+            file_name: finalFileName
           }
         ]);
       if (!error) {
@@ -53,6 +223,7 @@ const uploadSubmission = async (req, res) => {
     } catch (dbErr) {
       console.error('Supabase submission insert exception:', dbErr.message);
     }
+
     return res.status(201).json({
       fileId: fileData.id,
       webViewLink: fileData.webViewLink || null,
@@ -76,7 +247,7 @@ const getSubmissions = async (req, res) => {
     }
     let query = supabase
       .from('submissions')
-      .select('id, hei_id, campus, form_type, file_name, created_at')
+      .select('id, hei_id, campus, form_type, file_name, file_id, created_at')
       .eq('hei_id', heiId)
       .order('created_at', { ascending: false });
 
@@ -98,6 +269,50 @@ const getSubmissions = async (req, res) => {
   } catch (err) {
     console.error('Get submissions error:', err.message);
     return res.status(500).json({ error: 'Failed to load submissions' });
+  }
+};
+
+const downloadSubmissionPdf = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Submission id is required' });
+    }
+
+    const { data, error } = await supabase
+      .from('submissions')
+      .select('id, file_id, file_name')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Supabase submissions fetch error:', error.message);
+      return res.status(500).json({ error: 'Failed to load submission: ' + error.message });
+    }
+
+    if (!data || !data.file_id) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+
+    let pdfBuffer;
+    try {
+      pdfBuffer = await exportFileAsPdf(data.file_id);
+    } catch (driveErr) {
+      console.error('Drive export PDF error:', driveErr.message);
+      return res.status(500).json({ error: 'Failed to export file as PDF' });
+    }
+
+    const baseName = data.file_name && data.file_name.lastIndexOf('.') > 0
+      ? data.file_name.substring(0, data.file_name.lastIndexOf('.'))
+      : (data.file_name || 'submission');
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
+    return res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Download submission PDF exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
   }
 };
 
@@ -193,6 +408,15 @@ const createProgramRequest = async (req, res) => {
 
     if (!heiId || !campus || !programCode || !programTitle || !fileName || !mimeType || !fileBase64) {
       return res.status(400).json({ error: 'Missing required fields for program request' });
+    }
+
+    const normalizedMime = String(mimeType).toLowerCase();
+    const isPdf =
+      normalizedMime.includes('pdf') ||
+      (fileName && String(fileName).toLowerCase().endsWith('.pdf'));
+
+    if (!isPdf) {
+      return res.status(400).json({ error: 'Only PDF curriculum files are allowed' });
     }
 
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || undefined;
@@ -521,8 +745,16 @@ const createSubject = async (req, res) => {
 
     let fileData = { id: null, webViewLink: null, webContentLink: null };
     
-    // Only upload if file is provided
     if (fileName && mimeType && fileBase64) {
+        const normalizedMime = String(mimeType).toLowerCase();
+        const isPdf =
+          normalizedMime.includes('pdf') ||
+          String(fileName).toLowerCase().endsWith('.pdf');
+
+        if (!isPdf) {
+          return res.status(400).json({ error: 'Only PDF syllabus files are allowed' });
+        }
+
         const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || undefined;
         try {
             fileData = await uploadBase64File({
@@ -533,8 +765,6 @@ const createSubject = async (req, res) => {
             });
         } catch (uploadErr) {
             console.error('Subject syllabus upload error:', uploadErr.message);
-            // We might want to continue even if upload fails, or fail hard. 
-            // For now, let's fail hard if file upload was attempted but failed.
             return res.status(500).json({ error: 'Failed to upload syllabus file: ' + uploadErr.message });
         }
     }

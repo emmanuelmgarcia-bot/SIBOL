@@ -16,7 +16,8 @@ const {
   createSubject,
   getSubjects,
   updateSubjectStatus,
-  deleteSubject
+  deleteSubject,
+  downloadSubmissionPdf
 } = require('../controllers/heiController');
 
 const router = express.Router();
@@ -24,6 +25,7 @@ const router = express.Router();
 router.get('/', getAllHeis);
 router.post('/submissions', uploadSubmission);
 router.get('/submissions', getSubmissions);
+router.get('/submissions/:id/pdf', downloadSubmissionPdf);
 
 router.get('/programs/master', getMasterPrograms);
 router.post('/programs/master', createMasterProgram);
