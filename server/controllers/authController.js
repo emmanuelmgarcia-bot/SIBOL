@@ -80,15 +80,29 @@ const loginUser = async (req, res) => {
 
     let heiId = null;
     if (reg.hei_name) {
-      const { data: heiRows, error: heiError } = await supabase
-        .from('heis')
-        .select('id')
-        .eq('name', reg.hei_name)
-        .limit(1);
-      if (heiError) {
-        console.error('Supabase fetch HEI during login error:', heiError.message);
-      } else if (heiRows && heiRows.length > 0) {
-        heiId = heiRows[0].id;
+      const heiName = (reg.hei_name || '').trim();
+      if (heiName) {
+        const { data: heiRows, error: heiError } = await supabase
+          .from('heis')
+          .select('id')
+          .eq('name', heiName)
+          .limit(1);
+        if (heiError) {
+          console.error('Supabase fetch HEI during login error:', heiError.message);
+        } else if (heiRows && heiRows.length > 0) {
+          heiId = heiRows[0].id;
+        } else {
+          const { data: insertedHeis, error: heiInsertError } = await supabase
+            .from('heis')
+            .insert([{ name: heiName }])
+            .select('id')
+            .single();
+          if (heiInsertError) {
+            console.error('Insert HEI error during login:', heiInsertError.message);
+          } else if (insertedHeis && insertedHeis.id) {
+            heiId = insertedHeis.id;
+          }
+        }
       }
     }
 
