@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+const supabase = require('../config/supabase');
 
 const loginUser = async (req, res) => {
   const { username, password, isAdmin } = req.body;
@@ -8,22 +8,24 @@ const loginUser = async (req, res) => {
   }
 
   try {
-    console.log(`[Auth] Checking public.profiles via Postgres for: ${username}`);
+    console.log(`[Auth] Checking public.profiles for: ${username}`);
 
-    const result = await pool.query(
-      `select id, username, role, assigned_region, hei_id
-       from public.profiles
-       where username = $1
-         and password_hash = crypt($2, password_hash)`,
-      [username, password]
-    );
+    const { data, error } = await supabase.rpc('login_profile', {
+      p_username: username,
+      p_password: password
+    });
 
-    if (!result.rows || result.rows.length === 0) {
+    if (error) {
+      console.error('Supabase login_profile error:', error.message);
+      return res.status(500).json({ error: 'Server error during login: ' + error.message });
+    }
+
+    if (!data || data.length === 0) {
       console.log('Invalid username or password for:', username);
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    const profile = result.rows[0];
+    const profile = data[0];
     console.log('User found:', profile.username);
 
     if (isAdmin && profile.role !== 'admin') {
@@ -55,12 +57,14 @@ const resetPasswordToDefault = async (req, res) => {
   }
 
   try {
-    await pool.query(
-      `update public.profiles
-       set password_hash = crypt('CHED@1994', gen_salt('bf'))
-       where username = $1`,
-      [username]
-    );
+    const { error } = await supabase.rpc('reset_password_default', {
+      p_username: username
+    });
+
+    if (error) {
+      console.error('Supabase reset_password_default error:', error.message);
+      return res.status(500).json({ error: 'Server error during password reset: ' + error.message });
+    }
 
     return res.status(200).json({ message: 'Password reset to default' });
   } catch (err) {
