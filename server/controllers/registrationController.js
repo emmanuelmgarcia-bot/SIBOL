@@ -76,14 +76,14 @@ const listRegistrationsByRegion = async (req, res) => {
 
     let query = supabase
       .from('registrations')
-      .select('id, hei_name, campus, region, first_name, middle_name, last_name, suffix, status, created_at');
+      .select('id, hei_name, campus, region, first_name, middle_name, last_name, suffix, status');
 
     if (region !== 'ALL') {
       query = query.eq('region', region);
     }
 
     const { data, error } = await query
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: false });
 
     if (error) {
       console.error('Supabase list registrations error:', error.message);
