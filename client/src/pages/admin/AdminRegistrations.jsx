@@ -27,7 +27,14 @@ const AdminRegistrations = () => {
       try {
         const userRaw = localStorage.getItem('sibol_user');
         const user = userRaw ? JSON.parse(userRaw) : null;
-        const region = user && user.assigned_region ? user.assigned_region : null;
+        let region = user && user.assigned_region ? user.assigned_region : null;
+
+        // Superched bypass: if user is 'superched' (or if we decide based on missing region), default to 'ALL'
+        if (!region && user && (user.username === 'superched' || user.role === 'superadmin')) {
+            region = 'ALL';
+        }
+        
+        // Also if the region in DB is explicitly 'ALL', we use it.
 
         if (!region) {
           console.error('Missing assigned region for admin user, cannot load HEI directory or registrations');
@@ -117,7 +124,11 @@ const AdminRegistrations = () => {
     }
     const userRaw = localStorage.getItem('sibol_user');
     const user = userRaw ? JSON.parse(userRaw) : null;
-    const region = user && user.assigned_region ? user.assigned_region : null;
+    let region = user && user.assigned_region ? user.assigned_region : null;
+    if (!region && user && (user.username === 'superched' || user.role === 'superadmin')) {
+      region = 'ALL';
+    }
+
     if (!region) {
       alert('Missing assigned region. Cannot approve.');
       return;
@@ -146,7 +157,11 @@ const AdminRegistrations = () => {
     }
     const userRaw = localStorage.getItem('sibol_user');
     const user = userRaw ? JSON.parse(userRaw) : null;
-    const region = user && user.assigned_region ? user.assigned_region : null;
+    let region = user && user.assigned_region ? user.assigned_region : null;
+    if (!region && user && (user.username === 'superched' || user.role === 'superadmin')) {
+      region = 'ALL';
+    }
+
     if (!region) {
       alert('Missing assigned region. Cannot delete.');
       return;

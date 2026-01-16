@@ -74,10 +74,15 @@ const listRegistrationsByRegion = async (req, res) => {
       return res.status(400).json({ error: 'Region is required' });
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('registrations')
-      .select('id, hei_name, campus, region, first_name, middle_name, last_name, suffix, status, created_at')
-      .eq('region', region)
+      .select('id, hei_name, campus, region, first_name, middle_name, last_name, suffix, status, created_at');
+
+    if (region !== 'ALL') {
+      query = query.eq('region', region);
+    }
+
+    const { data, error } = await query
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -100,21 +105,31 @@ const listHeiCampusesByRegion = async (req, res) => {
       return res.status(400).json({ error: 'Region is required' });
     }
 
-    const { data: regData, error: regError } = await supabase
+    let regQuery = supabase
       .from('registrations')
       .select('hei_name, campus, region, status')
-      .eq('region', region)
       .eq('status', 'Approved');
+
+    if (region !== 'ALL') {
+      regQuery = regQuery.eq('region', region);
+    }
+
+    const { data: regData, error: regError } = await regQuery;
 
     if (regError) {
       console.error('Supabase hei directory registrations error:', regError.message);
       return res.status(500).json({ error: 'Failed to load HEI directory: ' + regError.message });
     }
 
-    const { data: heiData, error: heiError } = await supabase
+    let heiQuery = supabase
       .from('heis')
-      .select('id, name, campus, region')
-      .eq('region', region);
+      .select('id, name, campus, region');
+
+    if (region !== 'ALL') {
+      heiQuery = heiQuery.eq('region', region);
+    }
+
+    const { data: heiData, error: heiError } = await heiQuery;
 
     if (heiError) {
       console.error('Supabase hei directory heis error:', heiError.message);
@@ -191,7 +206,7 @@ const approveRegistration = async (req, res) => {
       return res.status(404).json({ error: 'Registration not found' });
     }
 
-    if (rows.region !== region) {
+    if (region !== 'ALL' && rows.region !== region) {
       return res.status(403).json({ error: 'Not allowed to approve registration from another region' });
     }
 
@@ -236,7 +251,7 @@ const deleteRegistration = async (req, res) => {
       return res.status(404).json({ error: 'Registration not found' });
     }
 
-    if (rows.region !== region) {
+    if (region !== 'ALL' && rows.region !== region) {
       return res.status(403).json({ error: 'Not allowed to delete registration from another region' });
     }
 
