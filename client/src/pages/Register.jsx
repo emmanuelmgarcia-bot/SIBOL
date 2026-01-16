@@ -123,6 +123,13 @@ const Register = () => {
     hei.toLowerCase().includes(heiSearch.toLowerCase())
   );
 
+  const handleFieldChange = (field) => (e) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
   // --- COMPONENT: Label ---
   const Label = ({ text, required }) => (
     <label className="block text-xs font-bold text-gray-700 mb-1">
@@ -322,17 +329,37 @@ const Register = () => {
             <div className="grid grid-cols-2 gap-4 mb-3">
                 <div>
                   <Label text="Address Line 1" required />
-                  <input type="text" placeholder="Street, Building, etc." className="p-2 border border-gray-300 rounded text-sm w-full"/>
+                  <input
+                    type="text"
+                    className="p-2 border border-gray-300 rounded text-sm w-full"
+                    placeholder="Street, Building, etc."
+                    value={formData.addressLine1}
+                    onChange={handleFieldChange('addressLine1')}
+                    required
+                  />
                 </div>
                 <div>
                   <Label text="Address Line 2" />
-                  <input type="text" placeholder="Unit, Floor, etc." className="p-2 border border-gray-300 rounded text-sm w-full"/>
+                  <input
+                    type="text"
+                    className="p-2 border border-gray-300 rounded text-sm w-full"
+                    placeholder="Unit, Floor, etc."
+                    value={formData.addressLine2}
+                    onChange={handleFieldChange('addressLine2')}
+                  />
                 </div>
             </div>
             
             <div>
                  <Label text="Zip Code" required />
-                 <input type="text" placeholder="0000" className="p-2 border border-gray-300 rounded text-sm w-24"/>
+                 <input
+                  type="text"
+                  className="p-2 border border-gray-300 rounded text-sm w-24"
+                  placeholder="0000"
+                  value={formData.zipCode}
+                  onChange={handleFieldChange('zipCode')}
+                  required
+                 />
             </div>
         </div>
 
@@ -343,22 +370,43 @@ const Register = () => {
             <div className="grid grid-cols-2 gap-4 mb-3">
                 <div>
                     <Label text="First Name" required />
-                    <input type="text" className="w-full p-2 border border-gray-300 rounded text-sm"/>
+                    <input
+                      type="text"
+                      className="w-full p-2 border border-gray-300 rounded text-sm"
+                      value={formData.firstName}
+                      onChange={handleFieldChange('firstName')}
+                      required
+                    />
                 </div>
                 <div>
                     <Label text="Middle Name" />
-                    <input type="text" className="w-full p-2 border border-gray-300 rounded text-sm"/>
+                    <input
+                      type="text"
+                      className="w-full p-2 border border-gray-300 rounded text-sm"
+                      value={formData.middleName}
+                      onChange={handleFieldChange('middleName')}
+                    />
                 </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <Label text="Last Name" required />
-                    <input type="text" className="w-full p-2 border border-gray-300 rounded text-sm"/>
+                    <input
+                      type="text"
+                      className="w-full p-2 border border-gray-300 rounded text-sm"
+                      value={formData.lastName}
+                      onChange={handleFieldChange('lastName')}
+                      required
+                    />
                 </div>
                 <div className="w-1/2"> 
                     <Label text="Suffix" />
-                    <select className="w-full p-2 border border-gray-300 rounded bg-white text-sm">
+                    <select
+                      className="w-full p-2 border border-gray-300 rounded bg-white text-sm"
+                      value={formData.suffix}
+                      onChange={handleFieldChange('suffix')}
+                    >
                       <option value="">N/A</option>
                       <option value="Jr.">Jr.</option>
                       <option value="Sr.">Sr.</option>
