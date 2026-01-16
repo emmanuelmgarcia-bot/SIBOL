@@ -1,4 +1,7 @@
 const supabase = require('../config/supabase');
+const fs = require('fs');
+const path = require('path');
+const csv = require('csv-parser');
 
 const createRegistration = async (req, res) => {
   try {
@@ -97,6 +100,52 @@ const listRegistrationsByRegion = async (req, res) => {
   }
 };
 
+const loadHeiDirectoryFromCsv = () => {
+  return new Promise((resolve, reject) => {
+    const csvPath = path.join(__dirname, '..', 'data', 'Campus_list.csv');
+    if (!fs.existsSync(csvPath)) {
+      reject(new Error('Campus_list.csv not found'));
+      return;
+    }
+    const mapping = {};
+    fs.createReadStream(csvPath)
+      .pipe(csv())
+      .on('data', row => {
+        const rawName = row['HEI Name'];
+        const rawCampus = row['Campus'];
+        if (!rawName) {
+          return;
+        }
+        const heiName = String(rawName).trim();
+        const campusName = rawCampus ? String(rawCampus).trim() : '';
+        if (!heiName) {
+          return;
+        }
+        if (!mapping[heiName]) {
+          mapping[heiName] = [];
+        }
+        if (campusName && !mapping[heiName].includes(campusName)) {
+          mapping[heiName].push(campusName);
+        }
+      })
+      .on('end', () => {
+        const list = Object.keys(mapping)
+          .sort((a, b) => a.localeCompare(b))
+          .map(heiName => {
+            const campuses = mapping[heiName].slice().sort((a, b) => a.localeCompare(b));
+            return {
+              hei: heiName,
+              campuses
+            };
+          });
+        resolve(list);
+      })
+      .on('error', err => {
+        reject(err);
+      });
+  });
+};
+
 const listHeiCampusesByRegion = async (req, res) => {
   try {
     const { region } = req.query;
@@ -105,74 +154,7 @@ const listHeiCampusesByRegion = async (req, res) => {
       return res.status(400).json({ error: 'Region is required' });
     }
 
-    let regQuery = supabase
-      .from('registrations')
-      .select('hei_name, campus, region, status')
-      .eq('status', 'Approved');
-
-    if (region !== 'ALL') {
-      regQuery = regQuery.eq('region', region);
-    }
-
-    const { data: regData, error: regError } = await regQuery;
-
-    if (regError) {
-      console.error('Supabase hei directory registrations error:', regError.message);
-      return res.status(500).json({ error: 'Failed to load HEI directory: ' + regError.message });
-    }
-
-    let heiQuery = supabase
-      .from('heis')
-      .select('id, name, region');
-
-    if (region !== 'ALL') {
-      heiQuery = heiQuery.eq('region', region);
-    }
-
-    const { data: heiData, error: heiError } = await heiQuery;
-
-    if (heiError) {
-      console.error('Supabase hei directory heis error:', heiError.message);
-      return res.status(500).json({ error: 'Failed to load HEI master list: ' + heiError.message });
-    }
-
-    const grouped = {};
-    const heiIndex = {};
-
-    (heiData || []).forEach(row => {
-      const key = (row.name || '').trim().toLowerCase();
-      heiIndex[key] = row;
-    });
-
-    (regData || []).forEach(item => {
-      const hei = item.hei_name;
-      const campus = item.campus;
-      if (!hei) {
-        return;
-      }
-      const matchKey = (hei || '').trim().toLowerCase();
-      const heiRow = heiIndex[matchKey];
-      const groupKey = (heiRow && heiRow.id) ? heiRow.id : matchKey;
-      if (!grouped[groupKey]) {
-        grouped[groupKey] = {
-          heiId: heiRow ? heiRow.id : null,
-          hei: heiRow ? heiRow.name : hei,
-          campuses: [],
-          region: (heiRow && heiRow.region) || item.region
-        };
-      }
-      const campusValue = campus;
-      if (campusValue && !grouped[groupKey].campuses.includes(campusValue)) {
-        grouped[groupKey].campuses.push(campusValue);
-      }
-    });
-
-    Object.values(grouped).forEach(entry => {
-      entry.campuses.sort((a, b) => a.localeCompare(b));
-    });
-
-    const list = Object.values(grouped).sort((a, b) => a.hei.localeCompare(b.hei));
-
+    const list = await loadHeiDirectoryFromCsv();
     return res.status(200).json(list);
   } catch (err) {
     console.error('List HEI campuses exception:', err.message);
