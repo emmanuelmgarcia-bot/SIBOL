@@ -72,6 +72,49 @@ const Login = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!formData.username) {
+      alert('Please enter your username first.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Reset password for "${formData.username}" to the default (CHED@1994)?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const apiBase =
+        window.location.hostname === 'localhost'
+          ? 'http://localhost:5000'
+          : '';
+
+      const response = await fetch(`${apiBase}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: formData.username })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to reset password');
+      }
+
+      alert('Password has been reset to the default: CHED@1994');
+    } catch (error) {
+      console.error('Reset Password Error:', error);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthLayout>
       <div className="flex flex-col items-center mb-6">
@@ -122,7 +165,14 @@ const Login = () => {
             />
             Show Password
           </label>
-          <button type="button" className="text-gray-400 hover:text-gray-600">
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            disabled={loading}
+            className={`${
+              loading ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
             forgot password?
           </button>
         </div>

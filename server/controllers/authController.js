@@ -1,64 +1,76 @@
 const supabase = require('../config/supabase');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'sibol-secret-key-change-in-production';
 
 const loginUser = async (req, res) => {
   const { username, password, isAdmin } = req.body;
 
   if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password required' });
+    return res.status(400).json({ error: 'Username and password are required' });
   }
 
   try {
-    const allowedRoles = isAdmin ? ['SUPER_CHED', 'CHED_REGION'] : ['HEI_REP'];
+    console.log(`[Auth] Checking public.profiles for: ${username}`);
 
-    let query = supabase
-      .from('users')
-      .select('*')
-      .eq('username', username)
-      .eq('status', 'active')
-      .in('role', allowedRoles)
-      .limit(1);
-
-    const { data, error } = await query;
+    const { data, error } = await supabase.rpc('login_profile', {
+      p_username: username,
+      p_password: password
+    });
 
     if (error) {
-      console.error('Supabase users query error:', error.message);
+      console.error('Supabase login_profile error:', error.message);
       return res.status(500).json({ error: 'Server error during login: ' + error.message });
     }
 
     if (!data || data.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      console.log('Invalid username or password for:', username);
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    const user = data[0];
+    const profile = data[0];
+    console.log('User found:', profile.username);
 
-    const passwordMatches = await bcrypt.compare(password, user.password_hash);
-    if (!passwordMatches) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    if (isAdmin && profile.role !== 'admin') {
+      return res.status(403).json({ error: 'Access Denied: Not an Admin.' });
     }
-
-    const payload = {
-      id: user.id,
-      username: user.username,
-      role: user.role,
-      region_designation: user.region_designation,
-      hei_id: user.hei_id,
-      must_change_password: user.must_change_password === 1 || user.must_change_password === true
-    };
-
-    const token = jwt.sign(payload, JWT_SECRET);
 
     return res.status(200).json({
-      token,
-      user: payload
+      message: 'Login successful',
+      token: 'mock-token',
+      user: {
+        id: profile.id,
+        username: profile.username,
+        role: profile.role,
+        assigned_region: profile.assigned_region,
+        hei_id: profile.hei_id
+      }
     });
   } catch (err) {
-    console.error('Login error:', err.message);
+    console.error('Login Error:', err.message);
     return res.status(500).json({ error: 'Server error during login: ' + err.message });
   }
 };
 
-module.exports = { loginUser };
+const resetPasswordToDefault = async (req, res) => {
+  const { username } = req.body;
+
+  if (!username) {
+    return res.status(400).json({ error: 'Username is required' });
+  }
+
+  try {
+    const { error } = await supabase.rpc('reset_password_default', {
+      p_username: username
+    });
+
+    if (error) {
+      console.error('Supabase reset_password_default error:', error.message);
+      return res.status(500).json({ error: 'Failed to reset password: ' + error.message });
+    }
+
+    return res.status(200).json({ message: 'Password reset to default' });
+  } catch (err) {
+    console.error('Reset Password Error:', err.message);
+    return res.status(500).json({ error: 'Server error during password reset: ' + err.message });
+  }
+};
+
+module.exports = { loginUser, resetPasswordToDefault };
