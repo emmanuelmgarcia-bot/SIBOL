@@ -51,16 +51,29 @@ const AdminPrograms = () => {
 
   // FETCH HEI DATA
   useEffect(() => {
-    fetch('http://localhost:5000/api/hei-data')
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+    fetch(`${apiBase}/api/heis`)
       .then(res => res.json())
       .then(data => {
-        if (data.mapping) {
-            const parsedList = Object.entries(data.mapping).map(([hei, campuses]) => ({
-                hei: hei,
-                campuses: campuses.sort()
-            }));
-            parsedList.sort((a, b) => a.hei.localeCompare(b.hei));
-            setHeiList(parsedList);
+        if (Array.isArray(data)) {
+          const grouped = data.reduce((acc, item) => {
+            const key = item.name;
+            if (!acc[key]) {
+              acc[key] = {
+                heiId: item.id,
+                hei: item.name,
+                campuses: []
+              };
+            }
+            if (item.campus && !acc[key].campuses.includes(item.campus)) {
+              acc[key].campuses.push(item.campus);
+            }
+            return acc;
+          }, {});
+          const list = Object.values(grouped);
+          list.forEach(entry => entry.campuses.sort());
+          list.sort((a, b) => a.hei.localeCompare(b.hei));
+          setHeiList(list);
         }
         setLoading(false);
       })

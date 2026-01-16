@@ -15,22 +15,32 @@ const AdminDashboard = () => {
 
   // --- 1. FETCH DATA FROM BACKEND (Same as Register.jsx) ---
   useEffect(() => {
-    fetch('http://localhost:5000/api/hei-data')
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+    fetch(`${apiBase}/api/heis`)
       .then(res => res.json())
       .then(data => {
-        if (data.mapping) {
-            // Transform the API's 'mapping' object into an array for the Dashboard
-            // From: { "ISU": ["Campus A", "Campus B"] }
-            // To:   [ { hei: "ISU", campuses: ["Campus A", "Campus B"] } ]
-            const parsedList = Object.entries(data.mapping).map(([hei, campuses]) => ({
-                hei: hei,
-                campuses: campuses.sort()
-            }));
-            
-            // Sort alphabetically
-            parsedList.sort((a, b) => a.hei.localeCompare(b.hei));
-            
-            setHeiList(parsedList);
+        if (Array.isArray(data)) {
+          // Transform the API's array into the Dashboard format
+          // From: [ { name: "ISU", campus: "Main" }, ... ]
+          // To:   [ { hei: "ISU", campuses: ["Main", ...] } ]
+          const grouped = data.reduce((acc, item) => {
+            const key = item.name;
+            if (!acc[key]) {
+              acc[key] = {
+                heiId: item.id,
+                hei: item.name,
+                campuses: []
+              };
+            }
+            if (item.campus && !acc[key].campuses.includes(item.campus)) {
+              acc[key].campuses.push(item.campus);
+            }
+            return acc;
+          }, {});
+          const parsedList = Object.values(grouped);
+          parsedList.forEach(entry => entry.campuses.sort());
+          parsedList.sort((a, b) => a.hei.localeCompare(b.hei));
+          setHeiList(parsedList);
         }
         setLoading(false);
       })

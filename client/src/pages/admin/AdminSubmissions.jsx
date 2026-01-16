@@ -17,7 +17,7 @@ const AdminSubmissions = () => {
   useEffect(() => {
     const apiBase =
       window.location.hostname === 'localhost'
-        ? 'http://localhost:5001'
+        ? 'http://localhost:5000'
         : '';
     fetch(`${apiBase}/api/heis`)
       .then(res => res.json())
