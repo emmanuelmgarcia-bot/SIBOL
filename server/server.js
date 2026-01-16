@@ -8,9 +8,9 @@ const csv = require('csv-parser');
 // Load Env Variables
 dotenv.config();
 
-// Import Supabase Routes
 const authRoutes = require('./routes/authRoutes');
 const heiRoutes = require('./routes/heiRoutes');
+const registrationRoutes = require('./routes/registrationRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,9 +21,9 @@ app.use(express.json());
 // ==========================================
 // 1. SUPABASE ROUTES (Database)
 // ==========================================
-// These handle Login and the Master HEI List
-app.use('/api/auth', authRoutes); // POST /api/auth/login
-app.use('/api/heis', heiRoutes);  // GET /api/heis
+app.use('/api/auth', authRoutes);
+app.use('/api/heis', heiRoutes);
+app.use('/api/registrations', registrationRoutes);
 
 let locationData = {
     regions: [],

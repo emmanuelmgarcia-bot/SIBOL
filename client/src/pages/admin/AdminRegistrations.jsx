@@ -21,14 +21,14 @@ const AdminRegistrations = () => {
 
   const [registrations, setRegistrations] = useState([]);
 
-  // --- 1. FETCH HEI DATA ---
   useEffect(() => {
     const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
-    fetch(`${apiBase}/api/heis`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          const grouped = data.reduce((acc, item) => {
+    const load = async () => {
+      try {
+        const heiRes = await fetch(`${apiBase}/api/heis`);
+        const heiData = await heiRes.json();
+        if (Array.isArray(heiData)) {
+          const grouped = heiData.reduce((acc, item) => {
             const key = item.name;
             if (!acc[key]) {
               acc[key] = {
@@ -47,12 +47,37 @@ const AdminRegistrations = () => {
           list.sort((a, b) => a.hei.localeCompare(b.hei));
           setHeiList(list);
         }
+
+        const userRaw = localStorage.getItem('sibol_user');
+        const user = userRaw ? JSON.parse(userRaw) : null;
+        const region = user && user.assigned_region ? user.assigned_region : null;
+
+        if (region) {
+          const regRes = await fetch(`${apiBase}/api/registrations?region=${encodeURIComponent(region)}`);
+          const regData = await regRes.json();
+          if (!regRes.ok) {
+            throw new Error(regData.error || 'Failed to load registrations');
+          }
+          const mapped = (regData || []).map(item => ({
+            id: item.id,
+            hei: item.hei_name,
+            campus: item.campus,
+            name: `${item.first_name} ${item.middle_name || ''} ${item.last_name}`.replace(/\s+/g, ' ').trim(),
+            username: item.hei_name,
+            status: item.status,
+            region: item.region
+          }));
+          setRegistrations(mapped);
+        } else {
+          setRegistrations([]);
+        }
         setLoading(false);
-      })
-      .catch(err => {
-        console.error("Error loading HEI data:", err);
+      } catch (err) {
+        console.error('Error loading admin registrations data:', err);
         setLoading(false);
-      });
+      }
+    };
+    load();
   }, []);
 
   // --- CLICK OUTSIDE HANDLER ---
@@ -85,23 +110,65 @@ const AdminRegistrations = () => {
   );
 
   // --- HANDLERS: Actions ---
-  const handleApprove = (id) => {
-    if(window.confirm("Approve this user registration?")) {
-        setRegistrations(registrations.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
+  const handleApprove = async (id) => {
+    if (!window.confirm("Approve this user registration?")) {
+      return;
+    }
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const region = user && user.assigned_region ? user.assigned_region : null;
+    if (!region) {
+      alert('Missing assigned region. Cannot approve.');
+      return;
+    }
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+    try {
+      const res = await fetch(`${apiBase}/api/registrations/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ region })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to approve registration');
+      }
+      setRegistrations(registrations.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
+    } catch (err) {
+      console.error('Approve registration error:', err);
+      alert(err.message || 'Failed to approve registration');
     }
   };
 
-  const handleDecline = (id) => {
-    if(window.confirm("Decline (Delete) this registration?")) {
-        setRegistrations(registrations.filter(r => r.id !== id));
+  const handleDecline = async (id) => {
+    if (!window.confirm("Decline (Delete) this registration?")) {
+      return;
+    }
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const region = user && user.assigned_region ? user.assigned_region : null;
+    if (!region) {
+      alert('Missing assigned region. Cannot delete.');
+      return;
+    }
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+    try {
+      const res = await fetch(`${apiBase}/api/registrations/${id}/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ region })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete registration');
+      }
+      setRegistrations(registrations.filter(r => r.id !== id));
+    } catch (err) {
+      console.error('Delete registration error:', err);
+      alert(err.message || 'Failed to delete registration');
     }
   };
   
-  const handleDelete = (id) => {
-    if(window.confirm("Delete this user account?")) {
-        setRegistrations(registrations.filter(r => r.id !== id));
-    }
-  };
+  const handleDelete = handleDecline;
 
   // --- FILTER LOGIC ---
   const filteredRegistrations = registrations.filter(reg => {

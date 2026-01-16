@@ -128,13 +128,49 @@ const Register = () => {
     </label>
   );
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+    try {
+      const response = await fetch(`${apiBase}/api/registrations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          heiName: formData.heiName,
+          campus: formData.campus,
+          region: formData.region,
+          province: formData.province,
+          city: formData.city,
+          barangay: formData.barangay,
+          addressLine1: formData.addressLine1,
+          addressLine2: formData.addressLine2,
+          zipCode: formData.zipCode,
+          firstName: formData.firstName,
+          middleName: formData.middleName,
+          lastName: formData.lastName,
+          suffix: formData.suffix
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+      alert('Registration submitted for approval.');
+    } catch (err) {
+      console.error('Registration submit error:', err);
+      alert(err.message || 'Failed to submit registration');
+    }
+  };
+
   return (
     <AuthLayout>
       <div className="flex flex-col items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-600">HEI Registration</h2>
       </div>
 
-      <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
         
         {/* --- HEI & CAMPUS SECTION --- */}
         <div className="grid grid-cols-2 gap-4">
