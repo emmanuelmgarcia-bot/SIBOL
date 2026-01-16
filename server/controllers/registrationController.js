@@ -123,7 +123,7 @@ const listHeiCampusesByRegion = async (req, res) => {
 
     let heiQuery = supabase
       .from('heis')
-      .select('id, name, campus, region');
+      .select('id, name, region');
 
     if (region !== 'ALL') {
       heiQuery = heiQuery.eq('region', region);
@@ -140,7 +140,7 @@ const listHeiCampusesByRegion = async (req, res) => {
     const heiIndex = {};
 
     (heiData || []).forEach(row => {
-      const key = `${(row.name || '').trim().toLowerCase()}|${(row.campus || '').trim().toLowerCase()}`;
+      const key = (row.name || '').trim().toLowerCase();
       heiIndex[key] = row;
     });
 
@@ -150,21 +150,18 @@ const listHeiCampusesByRegion = async (req, res) => {
       if (!hei) {
         return;
       }
-      const matchKey = `${(hei || '').trim().toLowerCase()}|${(campus || '').trim().toLowerCase()}`;
+      const matchKey = (hei || '').trim().toLowerCase();
       const heiRow = heiIndex[matchKey];
-      if (!heiRow) {
-        return;
-      }
-      const groupKey = heiRow.id;
+      const groupKey = (heiRow && heiRow.id) ? heiRow.id : matchKey;
       if (!grouped[groupKey]) {
         grouped[groupKey] = {
-          heiId: heiRow.id,
-          hei: heiRow.name,
+          heiId: heiRow ? heiRow.id : null,
+          hei: heiRow ? heiRow.name : hei,
           campuses: [],
-          region: heiRow.region || item.region
+          region: (heiRow && heiRow.region) || item.region
         };
       }
-      const campusValue = campus || heiRow.campus;
+      const campusValue = campus;
       if (campusValue && !grouped[groupKey].campuses.includes(campusValue)) {
         grouped[groupKey].campuses.push(campusValue);
       }
