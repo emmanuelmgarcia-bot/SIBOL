@@ -1,6 +1,130 @@
 const supabase = require('../config/supabase');
 const bcrypt = require('bcryptjs');
 
+const createHeiFromRegistration = async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    const { data: reg, error: regError } = await supabase
+      .from('registrations')
+      .select('hei_name, campus, region, province, city, barangay, address_line1, address_line2, zip_code, status')
+      .eq('username', username)
+      .limit(1)
+      .single();
+
+    if (regError) {
+      console.error('Fetch registration for HEI create error:', regError.message);
+      return res.status(500).json({ error: 'Failed to load registration: ' + regError.message });
+    }
+
+    if (!reg) {
+      return res.status(404).json({ error: 'Registration not found for username' });
+    }
+
+    if (reg.status !== 'Approved') {
+      return res.status(400).json({ error: 'Registration must be approved before creating HEI entry' });
+    }
+
+    const heiName = (reg.hei_name || '').trim();
+    const campusName = (reg.campus || '').trim();
+    const region = (reg.region || '').trim();
+    const province = (reg.province || '').trim();
+    const city = (reg.city || '').trim();
+    const barangay = (reg.barangay || '').trim();
+    const addressLine1 = (reg.address_line1 || '').trim();
+    const addressLine2 = (reg.address_line2 || '').trim();
+    const zipCode = (reg.zip_code || '').trim();
+
+    if (!heiName) {
+      return res.status(400).json({ error: 'Registration has no HEI name' });
+    }
+
+    const addressParts = [province, city, barangay, addressLine1, addressLine2, zipCode].filter(Boolean);
+    const address = addressParts.join(', ');
+
+    let heiId = null;
+
+    let heiQuery = supabase
+      .from('heis')
+      .select('id')
+      .eq('name', heiName);
+
+    if (campusName) {
+      heiQuery = heiQuery.eq('campus_name', campusName);
+    }
+
+    if (region) {
+      heiQuery = heiQuery.eq('region_destination', region);
+    }
+
+    const { data: existingHeis, error: heiFetchError } = await heiQuery.limit(1);
+
+    if (heiFetchError) {
+      console.error('Fetch HEI for manual create error:', heiFetchError.message);
+    } else if (existingHeis && existingHeis.length > 0) {
+      heiId = existingHeis[0].id;
+    }
+
+    if (!heiId) {
+      const { data: heiIlikeRows, error: heiIlikeError } = await supabase
+        .from('heis')
+        .select('id')
+        .ilike('name', heiName)
+        .limit(1);
+      if (heiIlikeError) {
+        console.error('Ilike HEI fetch for manual create error:', heiIlikeError.message);
+      } else if (heiIlikeRows && heiIlikeRows.length > 0) {
+        heiId = heiIlikeRows[0].id;
+      }
+    }
+
+    if (!heiId) {
+      const insertPayload = {
+        name: heiName,
+        campus_name: campusName || null,
+        address: address || null,
+        region_destination: region || null,
+        academic_year: null
+      };
+
+      const { data: insertedHeis, error: heiInsertError } = await supabase
+        .from('heis')
+        .insert([insertPayload])
+        .select('id')
+        .single();
+
+      if (heiInsertError) {
+        console.error('Insert HEI for manual create error:', heiInsertError.message);
+        const { data: afterErrorHeis, error: afterErrorFetch } = await supabase
+          .from('heis')
+          .select('id')
+          .ilike('name', heiName)
+          .limit(1);
+        if (afterErrorFetch) {
+          console.error('Post-insert HEI fetch for manual create error:', afterErrorFetch.message);
+        } else if (afterErrorHeis && afterErrorHeis.length > 0) {
+          heiId = afterErrorHeis[0].id;
+        }
+      } else if (insertedHeis && insertedHeis.id) {
+        heiId = insertedHeis.id;
+      }
+    }
+
+    if (!heiId) {
+      return res.status(500).json({ error: 'Failed to create or find HEI entry' });
+    }
+
+    return res.status(200).json({ success: true, hei_id: heiId });
+  } catch (err) {
+    console.error('Create HEI from registration exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
 const createRegistration = async (req, res) => {
   try {
     const {
@@ -425,5 +549,6 @@ module.exports = {
   listRegistrationsByRegion,
   listHeiCampusesByRegion,
   approveRegistration,
-  deleteRegistration
+  deleteRegistration,
+  createHeiFromRegistration
 };
