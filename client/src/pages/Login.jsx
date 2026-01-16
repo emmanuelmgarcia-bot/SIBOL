@@ -29,8 +29,12 @@ const Login = () => {
     try {
       console.log("Sending login request...", formData);
 
-      // CALL YOUR BACKEND API
-      const response = await fetch('http://localhost:5001/api/auth/login', {
+      const apiBase =
+        window.location.hostname === 'localhost'
+          ? 'http://localhost:5001'
+          : '';
+
+      const response = await fetch(`${apiBase}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
