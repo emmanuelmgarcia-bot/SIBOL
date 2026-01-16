@@ -79,30 +79,70 @@ const loginUser = async (req, res) => {
     }
 
     let heiId = null;
-    if (reg.hei_name) {
-      const heiName = (reg.hei_name || '').trim();
-      if (heiName) {
-        const { data: heiRows, error: heiError } = await supabase
+    const heiNameRaw = reg.hei_name || '';
+    const campusRaw = reg.campus || '';
+    const regionRaw = reg.region || '';
+    const heiName = heiNameRaw.trim();
+    const campusName = campusRaw.trim();
+    const regionName = regionRaw.trim();
+
+    if (heiName) {
+      const { data: heiRows, error: heiError } = await supabase
+        .from('heis')
+        .select('id')
+        .eq('name', heiName)
+        .limit(1);
+      if (heiError) {
+        console.error('Supabase fetch HEI during login error:', heiError.message);
+      } else if (heiRows && heiRows.length > 0) {
+        heiId = heiRows[0].id;
+      }
+
+      if (!heiId) {
+        const { data: fuzzyRows, error: fuzzyError } = await supabase
           .from('heis')
-          .select('id')
-          .eq('name', heiName)
+          .select('id, name')
+          .ilike('name', `%${heiName}%`)
           .limit(1);
-        if (heiError) {
-          console.error('Supabase fetch HEI during login error:', heiError.message);
-        } else if (heiRows && heiRows.length > 0) {
-          heiId = heiRows[0].id;
-        } else {
-          const { data: insertedHeis, error: heiInsertError } = await supabase
-            .from('heis')
-            .insert([{ name: heiName }])
-            .select('id')
-            .single();
-          if (heiInsertError) {
-            console.error('Insert HEI error during login:', heiInsertError.message);
-          } else if (insertedHeis && insertedHeis.id) {
-            heiId = insertedHeis.id;
-          }
+        if (fuzzyError) {
+          console.error('Supabase fuzzy fetch HEI during login error:', fuzzyError.message);
+        } else if (fuzzyRows && fuzzyRows.length > 0) {
+          heiId = fuzzyRows[0].id;
         }
+      }
+
+      if (!heiId) {
+        const insertPayload = {
+          name: heiName
+        };
+        if (campusName) {
+          insertPayload.campus = campusName;
+        }
+        if (regionName) {
+          insertPayload.region = regionName;
+        }
+        const { data: insertedHeis, error: heiInsertError } = await supabase
+          .from('heis')
+          .insert([insertPayload])
+          .select('id')
+          .single();
+        if (heiInsertError) {
+          console.error('Insert HEI error during login:', heiInsertError.message);
+        } else if (insertedHeis && insertedHeis.id) {
+          heiId = insertedHeis.id;
+        }
+      }
+    } else if (campusName && regionName) {
+      const { data: heiRowsByCampus, error: heiCampusError } = await supabase
+        .from('heis')
+        .select('id')
+        .eq('campus', campusName)
+        .eq('region', regionName)
+        .limit(1);
+      if (heiCampusError) {
+        console.error('Supabase fetch HEI by campus/region during login error:', heiCampusError.message);
+      } else if (heiRowsByCampus && heiRowsByCampus.length > 0) {
+        heiId = heiRowsByCampus[0].id;
       }
     }
 
