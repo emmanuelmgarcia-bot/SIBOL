@@ -50,7 +50,7 @@ const loginUser = async (req, res) => {
 
     const { data: regRows, error: regError } = await supabase
       .from('registrations')
-      .select('id, hei_name, campus, region, username, password_hash, is_first_login')
+      .select('id, hei_name, campus, region, province, city, barangay, address_line1, address_line2, zip_code, username, password_hash, is_first_login')
       .eq('username', username)
       .eq('status', 'Approved')
       .limit(1);
@@ -82,16 +82,41 @@ const loginUser = async (req, res) => {
     const heiNameRaw = reg.hei_name || '';
     const campusRaw = reg.campus || '';
     const regionRaw = reg.region || '';
+    const provinceRaw = reg.province || '';
+    const cityRaw = reg.city || '';
+    const barangayRaw = reg.barangay || '';
+    const addr1Raw = reg.address_line1 || '';
+    const addr2Raw = reg.address_line2 || '';
+    const zipRaw = reg.zip_code || '';
+
     const heiName = heiNameRaw.trim();
     const campusName = campusRaw.trim();
     const regionName = regionRaw.trim();
+    const province = provinceRaw.trim();
+    const city = cityRaw.trim();
+    const barangay = barangayRaw.trim();
+    const addressLine1 = addr1Raw.trim();
+    const addressLine2 = addr2Raw.trim();
+    const zipCode = zipRaw.trim();
+
+    const addressParts = [province, city, barangay, addressLine1, addressLine2, zipCode].filter(Boolean);
+    const address = addressParts.join(', ');
 
     if (heiName) {
-      const { data: heiRows, error: heiError } = await supabase
+      let heiQuery = supabase
         .from('heis')
         .select('id')
-        .eq('name', heiName)
-        .limit(1);
+        .eq('name', heiName);
+
+      if (campusName) {
+        heiQuery = heiQuery.eq('campus_name', campusName);
+      }
+
+      if (regionName) {
+        heiQuery = heiQuery.eq('region_destination', regionName);
+      }
+
+      const { data: heiRows, error: heiError } = await heiQuery.limit(1);
       if (heiError) {
         console.error('Supabase fetch HEI during login error:', heiError.message);
       } else if (heiRows && heiRows.length > 0) {
@@ -99,28 +124,13 @@ const loginUser = async (req, res) => {
       }
 
       if (!heiId) {
-        const { data: fuzzyRows, error: fuzzyError } = await supabase
-          .from('heis')
-          .select('id, name')
-          .ilike('name', `%${heiName}%`)
-          .limit(1);
-        if (fuzzyError) {
-          console.error('Supabase fuzzy fetch HEI during login error:', fuzzyError.message);
-        } else if (fuzzyRows && fuzzyRows.length > 0) {
-          heiId = fuzzyRows[0].id;
-        }
-      }
-
-      if (!heiId) {
         const insertPayload = {
-          name: heiName
+          name: heiName,
+          campus_name: campusName || null,
+          address: address || null,
+          region_destination: regionName || null,
+          academic_year: null
         };
-        if (campusName) {
-          insertPayload.campus = campusName;
-        }
-        if (regionName) {
-          insertPayload.region = regionName;
-        }
         const { data: insertedHeis, error: heiInsertError } = await supabase
           .from('heis')
           .insert([insertPayload])
@@ -136,8 +146,8 @@ const loginUser = async (req, res) => {
       const { data: heiRowsByCampus, error: heiCampusError } = await supabase
         .from('heis')
         .select('id')
-        .eq('campus', campusName)
-        .eq('region', regionName)
+        .eq('campus_name', campusName)
+        .eq('region_destination', regionName)
         .limit(1);
       if (heiCampusError) {
         console.error('Supabase fetch HEI by campus/region during login error:', heiCampusError.message);

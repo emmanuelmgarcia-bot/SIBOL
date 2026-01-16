@@ -60,53 +60,6 @@ const createRegistration = async (req, res) => {
       return res.status(500).json({ error: 'Failed to save registration: ' + error.message });
     }
 
-    try {
-      const heiNameForHei = (data.hei_name || '').trim();
-      const campusForHei = (data.campus || '').trim();
-      const regionForHei = (data.region || '').trim();
-
-      if (heiNameForHei) {
-        let heiQuery = supabase
-          .from('heis')
-          .select('id')
-          .eq('name', heiNameForHei);
-
-        if (campusForHei) {
-          heiQuery = heiQuery.eq('campus', campusForHei);
-        }
-
-        if (regionForHei) {
-          heiQuery = heiQuery.eq('region', regionForHei);
-        }
-
-        const { data: existingHeis, error: heiFetchError } = await heiQuery.limit(1);
-
-        if (heiFetchError) {
-          console.error('Supabase fetch HEI during registration create error:', heiFetchError.message);
-        } else if (!existingHeis || existingHeis.length === 0) {
-          const insertPayload = {
-            name: heiNameForHei
-          };
-          if (campusForHei) {
-            insertPayload.campus = campusForHei;
-          }
-          if (regionForHei) {
-            insertPayload.region = regionForHei;
-          }
-
-          const { error: heiInsertError } = await supabase
-            .from('heis')
-            .insert([insertPayload]);
-
-          if (heiInsertError) {
-            console.error('Supabase insert HEI during registration create error:', heiInsertError.message);
-          }
-        }
-      }
-    } catch (heiErr) {
-      console.error('HEI sync during registration create exception:', heiErr.message);
-    }
-
     return res.status(201).json(data);
   } catch (err) {
     console.error('Create registration exception:', err.message);
@@ -235,7 +188,7 @@ const approveRegistration = async (req, res) => {
 
     const { data: rows, error: fetchError } = await supabase
       .from('registrations')
-      .select('id, region, hei_name, campus, first_name')
+      .select('id, region, hei_name, campus, first_name, province, city, barangay, address_line1, address_line2, zip_code')
       .eq('id', id)
       .single();
 
@@ -265,17 +218,42 @@ const approveRegistration = async (req, res) => {
     const heiNameRaw = rows.hei_name || '';
     const campusRaw = rows.campus || '';
     const firstNameRaw = rows.first_name || '';
+    const provinceRaw = rows.province || '';
+    const cityRaw = rows.city || '';
+    const barangayRaw = rows.barangay || '';
+    const addr1Raw = rows.address_line1 || '';
+    const addr2Raw = rows.address_line2 || '';
+    const zipRaw = rows.zip_code || '';
+
     const heiName = heiNameRaw.trim();
     const campusName = campusRaw.trim();
     const repFirstName = firstNameRaw.trim();
+    const province = provinceRaw.trim();
+    const city = cityRaw.trim();
+    const barangay = barangayRaw.trim();
+    const addressLine1 = addr1Raw.trim();
+    const addressLine2 = addr2Raw.trim();
+    const zipCode = zipRaw.trim();
+
+    const addressParts = [province, city, barangay, addressLine1, addressLine2, zipCode].filter(Boolean);
+    const address = addressParts.join(', ');
 
     let heiId = null;
     if (heiName) {
-      const { data: existingHeis, error: heiFetchError } = await supabase
+      let heiQuery = supabase
         .from('heis')
         .select('id')
-        .eq('name', heiName)
-        .limit(1);
+        .eq('name', heiName);
+
+      if (campusName) {
+        heiQuery = heiQuery.eq('campus_name', campusName);
+      }
+
+      if (rows.region) {
+        heiQuery = heiQuery.eq('region_destination', rows.region);
+      }
+
+      const { data: existingHeis, error: heiFetchError } = await heiQuery.limit(1);
 
       if (heiFetchError) {
         console.error('Fetch HEI error during approval:', heiFetchError.message);
@@ -284,28 +262,13 @@ const approveRegistration = async (req, res) => {
       }
 
       if (!heiId) {
-        const { data: fuzzyRows, error: fuzzyError } = await supabase
-          .from('heis')
-          .select('id, name')
-          .ilike('name', `%${heiName}%`)
-          .limit(1);
-        if (fuzzyError) {
-          console.error('Fuzzy fetch HEI error during approval:', fuzzyError.message);
-        } else if (fuzzyRows && fuzzyRows.length > 0) {
-          heiId = fuzzyRows[0].id;
-        }
-      }
-
-      if (!heiId) {
         const insertPayload = {
-          name: heiName
+          name: heiName,
+          campus_name: campusName || null,
+          address: address || null,
+          region_destination: rows.region || null,
+          academic_year: null
         };
-        if (campusName) {
-          insertPayload.campus = campusName;
-        }
-        if (rows.region) {
-          insertPayload.region = rows.region;
-        }
         const { data: insertedHeis, error: heiInsertError } = await supabase
           .from('heis')
           .insert([insertPayload])

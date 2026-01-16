@@ -7,7 +7,7 @@ const getAllHeis = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('heis')
-      .select('id, name, campus, region')
+      .select('id, name, campus_name, address, region_destination, academic_year')
       .order('name', { ascending: true });
 
     if (error) {
@@ -480,8 +480,8 @@ const listProgramRequests = async (req, res) => {
     if (region) {
       let heiQuery = supabase
         .from('heis')
-        .select('id, region')
-        .eq('region', region);
+        .select('id, region_destination')
+        .eq('region_destination', region);
 
       if (heiId) {
         heiQuery = heiQuery.eq('id', heiId);
@@ -566,7 +566,7 @@ const updateProgramRequestStatus = async (req, res) => {
     if (region) {
       const { data: heiRow, error: heiError } = await supabase
         .from('heis')
-        .select('id, region')
+        .select('id, region_destination')
         .eq('id', requestRow.hei_id)
         .single();
 
@@ -579,7 +579,7 @@ const updateProgramRequestStatus = async (req, res) => {
         return res.status(404).json({ error: 'HEI not found for program request' });
       }
 
-      if (heiRow.region !== region) {
+      if (heiRow.region_destination !== region) {
         return res.status(403).json({ error: 'Not allowed to modify program request from another region' });
       }
     }
@@ -816,7 +816,7 @@ const getSubjects = async (req, res) => {
         const { data: heisData, error: heisError } = await supabase
             .from('heis')
             .select('id')
-            .eq('region', region);
+            .eq('region_destination', region);
         
         if (heisError) throw heisError;
         heiIds = heisData.map(h => h.id);
