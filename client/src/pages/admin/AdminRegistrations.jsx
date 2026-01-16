@@ -24,6 +24,17 @@ const resolveRegion = (assignedRegion) => {
   return regionMap[assignedRegion] || assignedRegion;
 };
 
+const normalizeRegion = (value) => {
+  if (!value) return '';
+  const str = String(value);
+  const insideParensMatch = str.match(/\(([^)]+)\)/);
+  const inside = insideParensMatch ? insideParensMatch[1] : str;
+  return inside
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 const AdminRegistrations = () => {
   // ==========================================
   // 1. HEI & CAMPUS SELECTION STATE (FILTERS)
@@ -50,21 +61,13 @@ const AdminRegistrations = () => {
       try {
         const userRaw = localStorage.getItem('sibol_user');
         const user = userRaw ? JSON.parse(userRaw) : null;
-        let region = resolveRegion(user ? user.assigned_region : null);
+        const assignedRegion = user ? user.assigned_region : null;
+        const adminRegion = resolveRegion(assignedRegion);
+        const isSuperAdmin = user && (user.username === 'superched' || user.role === 'superadmin');
 
-        if (!region && user && (user.username === 'superched' || user.role === 'superadmin')) {
-          region = 'ALL';
-        }
+        const regionForHeiDirectory = adminRegion && !isSuperAdmin ? adminRegion : 'ALL';
 
-        if (!region) {
-          console.error('Missing assigned region for admin user, cannot load HEI directory or registrations');
-          setHeiList([]);
-          setRegistrations([]);
-          setLoading(false);
-          return;
-        }
-
-        const heiRes = await fetch(`${apiBase}/api/registrations/hei-directory?region=${encodeURIComponent(region)}`);
+        const heiRes = await fetch(`${apiBase}/api/registrations/hei-directory?region=${encodeURIComponent(regionForHeiDirectory)}`);
         const heiData = await heiRes.json();
         if (!heiRes.ok) {
           throw new Error(heiData.error || 'Failed to load HEI directory');
@@ -80,13 +83,12 @@ const AdminRegistrations = () => {
           setHeiList([]);
         }
 
-        if (region) {
-          const regRes = await fetch(`${apiBase}/api/registrations?region=${encodeURIComponent(region)}`);
+        const regRes = await fetch(`${apiBase}/api/registrations?region=ALL`);
           const regData = await regRes.json();
           if (!regRes.ok) {
             throw new Error(regData.error || 'Failed to load registrations');
           }
-          const mapped = (regData || []).map(item => {
+        const mappedRaw = (regData || []).map(item => {
             const statusRaw = item.status || '';
             const status = statusRaw.trim() || 'For Approval';
             return {
@@ -99,10 +101,15 @@ const AdminRegistrations = () => {
               region: item.region
             };
           });
-          setRegistrations(mapped);
-        } else {
-          setRegistrations([]);
-        }
+        const mapped = mappedRaw.filter(item => {
+          if (!adminRegion || isSuperAdmin) {
+            return true;
+          }
+          const adminKey = normalizeRegion(adminRegion);
+          const itemKey = normalizeRegion(item.region);
+          return adminKey === itemKey;
+        });
+        setRegistrations(mapped);
         setLoading(false);
       } catch (err) {
         console.error('Error loading admin registrations data:', err);
