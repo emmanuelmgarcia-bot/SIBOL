@@ -176,6 +176,9 @@ const AdminRegistrations = () => {
         throw new Error(data.error || 'Failed to approve registration');
       }
       setRegistrations(registrations.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
+      if (data.username) {
+        alert(`Account created.\n\nUsername: ${data.username}\nDefault password: CHED@1994`);
+      }
     } catch (err) {
       console.error('Approve registration error:', err);
       alert(err.message || 'Failed to approve registration');

@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const bcrypt = require('bcryptjs');
 
 const createRegistration = async (req, res) => {
   try {
@@ -214,7 +215,12 @@ const approveRegistration = async (req, res) => {
       return res.status(500).json({ error: 'Failed to approve registration: ' + updateError.message });
     }
 
-    const heiName = (rows.hei_name || '').trim();
+    const heiNameRaw = rows.hei_name || '';
+    const campusRaw = rows.campus || '';
+    const heiName = heiNameRaw.trim();
+    const campusName = campusRaw.trim();
+
+    let heiId = null;
     if (heiName) {
       const { data: existingHeis, error: heiFetchError } = await supabase
         .from('heis')
@@ -224,17 +230,82 @@ const approveRegistration = async (req, res) => {
 
       if (heiFetchError) {
         console.error('Fetch HEI error during approval:', heiFetchError.message);
-      } else if (!existingHeis || existingHeis.length === 0) {
-        const { error: heiInsertError } = await supabase
+      } else if (existingHeis && existingHeis.length > 0) {
+        heiId = existingHeis[0].id;
+      } else {
+        const { data: insertedHeis, error: heiInsertError } = await supabase
           .from('heis')
-          .insert([{ name: heiName }]);
+          .insert([{ name: heiName }])
+          .select('id')
+          .single();
         if (heiInsertError) {
           console.error('Insert HEI error during approval:', heiInsertError.message);
+        } else if (insertedHeis && insertedHeis.id) {
+          heiId = insertedHeis.id;
         }
       }
     }
 
-    return res.status(200).json({ success: true });
+    let createdUsername = null;
+    if (heiId) {
+      const baseParts = [];
+      if (heiName) {
+        baseParts.push(heiName);
+      }
+      if (campusName) {
+        baseParts.push(campusName);
+      }
+      const base = baseParts.join(' ');
+      let candidate = base
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      if (!candidate) {
+        candidate = `hei_${String(heiId).replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()}`;
+      }
+
+      let username = candidate;
+      for (let i = 0; i < 5; i++) {
+        const trial = i === 0 ? username : `${candidate}${i + 1}`;
+        const { data: existingProfiles, error: profileFetchError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', trial)
+          .limit(1);
+        if (profileFetchError) {
+          console.error('Fetch profile error during approval:', profileFetchError.message);
+          break;
+        }
+        if (!existingProfiles || existingProfiles.length === 0) {
+          username = trial;
+          createdUsername = username;
+          break;
+        }
+      }
+
+      if (createdUsername) {
+        try {
+          const salt = await bcrypt.genSalt(10);
+          const passwordHash = await bcrypt.hash('CHED@1994', salt);
+          const { error: profileInsertError } = await supabase
+            .from('profiles')
+            .insert([{
+              username: createdUsername,
+              role: 'hei',
+              assigned_region: null,
+              hei_id: heiId,
+              password_hash: passwordHash
+            }]);
+          if (profileInsertError) {
+            console.error('Insert profile error during approval:', profileInsertError.message);
+          }
+        } catch (hashError) {
+          console.error('Password hash error during approval:', hashError.message);
+        }
+      }
+    }
+
+    return res.status(200).json({ success: true, username: createdUsername || null });
   } catch (err) {
     console.error('Approve registration exception:', err.message);
     return res.status(500).json({ error: 'Server error: ' + err.message });
