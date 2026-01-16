@@ -31,7 +31,7 @@ const Login = () => {
 
       const apiBase =
         window.location.hostname === 'localhost'
-          ? 'http://localhost:5001'
+          ? 'http://localhost:5000'
           : '';
 
       const response = await fetch(`${apiBase}/api/auth/login`, {

@@ -1,51 +1,63 @@
 const supabase = require('../config/supabase');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'sibol-secret-key-change-in-production';
 
 const loginUser = async (req, res) => {
-  const { username, isAdmin } = req.body; // ignoring password for a moment to test connection
+  const { username, password, isAdmin } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password required' });
+  }
 
   try {
-    console.log(`[Auth] Checking public.profiles for: ${username}`);
+    const allowedRoles = isAdmin ? ['SUPER_CHED', 'CHED_REGION'] : ['HEI_REP'];
 
-    const { data: profiles, error } = await supabase
-      .from('profiles')
+    let query = supabase
+      .from('users')
       .select('*')
       .eq('username', username)
+      .eq('status', 'active')
+      .in('role', allowedRoles)
       .limit(1);
 
+    const { data, error } = await query;
+
     if (error) {
-      console.error('Supabase query error:', error.message);
+      console.error('Supabase users query error:', error.message);
       return res.status(500).json({ error: 'Server error during login: ' + error.message });
     }
 
-    if (!profiles || profiles.length === 0) {
-      console.log("User not found in profiles table.");
-      return res.status(401).json({ error: 'User not found in database' });
+    if (!data || data.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const profile = profiles[0];
-    console.log("User found:", profile.username);
+    const user = data[0];
 
-    // 2. SECURITY CHECK
-    if (isAdmin && profile.role !== 'admin') {
-      return res.status(403).json({ error: 'Access Denied: Not an Admin.' });
+    const passwordMatches = await bcrypt.compare(password, user.password_hash);
+    if (!passwordMatches) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // 3. SUCCESS (Bypassing password check temporarily to prove DB works)
-    res.status(200).json({
-      message: 'Login successful',
-      token: 'mock-token',
-      user: {
-        id: profile.id,
-        username: profile.username,
-        role: profile.role,
-        assigned_region: profile.assigned_region,
-        hei_id: profile.hei_id
-      }
+    const payload = {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      region_designation: user.region_designation,
+      hei_id: user.hei_id,
+      must_change_password: user.must_change_password === 1 || user.must_change_password === true
+    };
+
+    const token = jwt.sign(payload, JWT_SECRET);
+
+    return res.status(200).json({
+      token,
+      user: payload
     });
-
   } catch (err) {
-    console.error("Login Error:", err.message); // <--- LOOK AT THIS LINE IN YOUR TERMINAL
-    res.status(500).json({ error: 'Server error during login: ' + err.message });
+    console.error('Login error:', err.message);
+    return res.status(500).json({ error: 'Server error during login: ' + err.message });
   }
 };
 
