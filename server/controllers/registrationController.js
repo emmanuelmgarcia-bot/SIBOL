@@ -18,7 +18,16 @@ const createRegistration = async (req, res) => {
       suffix
     } = req.body;
 
-    if (!heiName || !campus || !region || !province || !city || !barangay || !firstName || !lastName) {
+    const cleanedHeiName = (heiName || '').trim();
+    const cleanedCampus = (campus || '').trim();
+    const cleanedRegion = (region || '').trim();
+    const cleanedProvince = (province || '').trim();
+    const cleanedCity = (city || '').trim();
+    const cleanedBarangay = (barangay || '').trim();
+    const cleanedFirstName = (firstName || '').trim();
+    const cleanedLastName = (lastName || '').trim();
+
+    if (!cleanedHeiName || !cleanedCampus || !cleanedRegion || !cleanedProvince || !cleanedCity || !cleanedBarangay || !cleanedFirstName || !cleanedLastName) {
       return res.status(400).json({ error: 'Missing required registration fields' });
     }
 
@@ -26,18 +35,18 @@ const createRegistration = async (req, res) => {
       .from('registrations')
       .insert([
         {
-          hei_name: heiName,
-          campus,
-          region,
-          province,
-          city,
-          barangay,
+          hei_name: cleanedHeiName,
+          campus: cleanedCampus,
+          region: cleanedRegion,
+          province: cleanedProvince,
+          city: cleanedCity,
+          barangay: cleanedBarangay,
           address_line1: addressLine1 || '',
           address_line2: addressLine2 || '',
           zip_code: zipCode || '',
-          first_name: firstName,
+          first_name: cleanedFirstName,
           middle_name: middleName || '',
-          last_name: lastName,
+          last_name: cleanedLastName,
           suffix: suffix || '',
           status: 'For Approval'
         }

@@ -140,27 +140,44 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+
+    const payload = {
+      heiName: formData.heiName || heiSearch.trim(),
+      campus: formData.campus,
+      region: formData.region,
+      province: formData.province,
+      city: formData.city,
+      barangay: formData.barangay,
+      addressLine1: formData.addressLine1,
+      addressLine2: formData.addressLine2,
+      zipCode: formData.zipCode,
+      firstName: formData.firstName,
+      middleName: formData.middleName,
+      lastName: formData.lastName,
+      suffix: formData.suffix
+    };
+
+    if (
+      !payload.heiName ||
+      !payload.campus ||
+      !payload.region ||
+      !payload.province ||
+      !payload.city ||
+      !payload.barangay ||
+      !payload.firstName ||
+      !payload.lastName
+    ) {
+      alert('Please fill in all required fields before submitting the registration.');
+      return;
+    }
+
     try {
       const response = await fetch(`${apiBase}/api/registrations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          heiName: formData.heiName,
-          campus: formData.campus,
-          region: formData.region,
-          province: formData.province,
-          city: formData.city,
-          barangay: formData.barangay,
-          addressLine1: formData.addressLine1,
-          addressLine2: formData.addressLine2,
-          zipCode: formData.zipCode,
-          firstName: formData.firstName,
-          middleName: formData.middleName,
-          lastName: formData.lastName,
-          suffix: formData.suffix
-        })
+        body: JSON.stringify(payload)
       });
       const data = await response.json();
       if (!response.ok) {
