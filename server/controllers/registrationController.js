@@ -262,6 +262,19 @@ const approveRegistration = async (req, res) => {
       }
 
       if (!heiId) {
+        const { data: heiIlikeRows, error: heiIlikeError } = await supabase
+          .from('heis')
+          .select('id')
+          .ilike('name', heiName)
+          .limit(1);
+        if (heiIlikeError) {
+          console.error('Ilike HEI fetch during approval error:', heiIlikeError.message);
+        } else if (heiIlikeRows && heiIlikeRows.length > 0) {
+          heiId = heiIlikeRows[0].id;
+        }
+      }
+
+      if (!heiId) {
         const insertPayload = {
           name: heiName,
           campus_name: campusName || null,
@@ -276,6 +289,18 @@ const approveRegistration = async (req, res) => {
           .single();
         if (heiInsertError) {
           console.error('Insert HEI error during approval:', heiInsertError.message);
+          if (!heiId) {
+            const { data: afterErrorHeis, error: afterErrorFetch } = await supabase
+              .from('heis')
+              .select('id')
+              .ilike('name', heiName)
+              .limit(1);
+            if (afterErrorFetch) {
+              console.error('Post-insert fetch HEI error during approval:', afterErrorFetch.message);
+            } else if (afterErrorHeis && afterErrorHeis.length > 0) {
+              heiId = afterErrorHeis[0].id;
+            }
+          }
         } else if (insertedHeis && insertedHeis.id) {
           heiId = insertedHeis.id;
         }

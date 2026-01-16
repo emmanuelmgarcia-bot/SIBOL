@@ -124,6 +124,19 @@ const loginUser = async (req, res) => {
       }
 
       if (!heiId) {
+        const { data: heiRowsIlike, error: heiIlikeError } = await supabase
+          .from('heis')
+          .select('id')
+          .ilike('name', heiName)
+          .limit(1);
+        if (heiIlikeError) {
+          console.error('Supabase ilike HEI fetch during login error:', heiIlikeError.message);
+        } else if (heiRowsIlike && heiRowsIlike.length > 0) {
+          heiId = heiRowsIlike[0].id;
+        }
+      }
+
+      if (!heiId) {
         const insertPayload = {
           name: heiName,
           campus_name: campusName || null,
@@ -138,6 +151,18 @@ const loginUser = async (req, res) => {
           .single();
         if (heiInsertError) {
           console.error('Insert HEI error during login:', heiInsertError.message);
+          if (!heiId) {
+            const { data: afterErrorRows, error: afterErrorFetch } = await supabase
+              .from('heis')
+              .select('id')
+              .ilike('name', heiName)
+              .limit(1);
+            if (afterErrorFetch) {
+              console.error('Supabase post-insert HEI fetch during login error:', afterErrorFetch.message);
+            } else if (afterErrorRows && afterErrorRows.length > 0) {
+              heiId = afterErrorRows[0].id;
+            }
+          }
         } else if (insertedHeis && insertedHeis.id) {
           heiId = insertedHeis.id;
         }
@@ -153,6 +178,37 @@ const loginUser = async (req, res) => {
         console.error('Supabase fetch HEI by campus/region during login error:', heiCampusError.message);
       } else if (heiRowsByCampus && heiRowsByCampus.length > 0) {
         heiId = heiRowsByCampus[0].id;
+      }
+
+      if (!heiId) {
+        const campusHeiName = heiName || `${campusName} - ${regionName}`;
+        const insertPayload = {
+          name: campusHeiName,
+          campus_name: campusName || null,
+          address: address || null,
+          region_destination: regionName || null,
+          academic_year: null
+        };
+        const { data: insertedCampusHeis, error: insertCampusError } = await supabase
+          .from('heis')
+          .insert([insertPayload])
+          .select('id')
+          .single();
+        if (insertCampusError) {
+          console.error('Insert HEI for campus/region during login error:', insertCampusError.message);
+          const { data: afterCampusRows, error: afterCampusFetch } = await supabase
+            .from('heis')
+            .select('id')
+            .ilike('name', campusHeiName)
+            .limit(1);
+          if (afterCampusFetch) {
+            console.error('Post-insert HEI fetch for campus/region during login error:', afterCampusFetch.message);
+          } else if (afterCampusRows && afterCampusRows.length > 0) {
+            heiId = afterCampusRows[0].id;
+          }
+        } else if (insertedCampusHeis && insertedCampusHeis.id) {
+          heiId = insertedCampusHeis.id;
+        }
       }
     }
 
