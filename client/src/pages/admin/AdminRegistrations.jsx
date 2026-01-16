@@ -86,15 +86,19 @@ const AdminRegistrations = () => {
           if (!regRes.ok) {
             throw new Error(regData.error || 'Failed to load registrations');
           }
-          const mapped = (regData || []).map(item => ({
-            id: item.id,
-            hei: item.hei_name,
-            campus: item.campus,
-            name: `${item.first_name} ${item.middle_name || ''} ${item.last_name}`.replace(/\s+/g, ' ').trim(),
-            username: item.hei_name,
-            status: item.status,
-            region: item.region
-          }));
+          const mapped = (regData || []).map(item => {
+            const statusRaw = item.status || '';
+            const status = statusRaw.trim() || 'For Approval';
+            return {
+              id: item.id,
+              hei: item.hei_name,
+              campus: item.campus,
+              name: `${item.first_name} ${item.middle_name || ''} ${item.last_name}`.replace(/\s+/g, ' ').trim(),
+              username: item.hei_name,
+              status,
+              region: item.region
+            };
+          });
           setRegistrations(mapped);
         } else {
           setRegistrations([]);
@@ -208,19 +212,18 @@ const AdminRegistrations = () => {
 
   // --- FILTER LOGIC ---
   const filteredRegistrations = registrations.filter(reg => {
-    // 1. Tab Filter
-    const matchesTab = reg.status === activeTab;
+    const status = (reg.status || '').trim() || 'For Approval';
+
+    const matchesTab =
+      activeTab === 'For Approval'
+        ? status === 'For Approval'
+        : status === 'Approved';
     
-    // 2. HEI Filter (If selected, otherwise show all)
     const matchesHei = selectedHei ? reg.hei === selectedHei.hei : true;
-
-    // 3. Campus Filter (If selected, otherwise show all)
     const matchesCampus = selectedCampus ? reg.campus === selectedCampus : true;
-
-    // 4. Search Query
     const matchesSearch = 
-        reg.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        reg.username.toLowerCase().includes(searchQuery.toLowerCase());
+      reg.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      reg.username.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesTab && matchesHei && matchesCampus && matchesSearch;
   });
