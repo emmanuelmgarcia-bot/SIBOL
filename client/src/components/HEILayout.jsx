@@ -28,6 +28,10 @@ const HEILayout = ({ children }) => {
     }
     try {
       const parsed = JSON.parse(stored);
+      if (parsed.role !== 'hei') {
+        navigate('/login');
+        return;
+      }
       const mustChange = !!parsed.must_change_password;
       if (mustChange && location.pathname !== '/hei/account') {
         navigate('/hei/account');
