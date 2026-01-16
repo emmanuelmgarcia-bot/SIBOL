@@ -363,7 +363,13 @@ const approveRegistration = async (req, res) => {
     const address = addressParts.join(', ');
 
     let heiId = null;
+    let heiStatus = 'not_processed';
+    let heiMessage = 'HEI record was not processed.';
+
     if (heiName) {
+      heiStatus = 'lookup';
+      heiMessage = 'Looking up existing HEI record.';
+
       let heiQuery = supabase
         .from('heis')
         .select('id')
@@ -381,8 +387,12 @@ const approveRegistration = async (req, res) => {
 
       if (heiFetchError) {
         console.error('Fetch HEI error during approval:', heiFetchError.message);
+        heiStatus = 'lookup_error';
+        heiMessage = 'Error while looking up existing HEI record. Check server logs.';
       } else if (existingHeis && existingHeis.length > 0) {
         heiId = existingHeis[0].id;
+        heiStatus = 'existing';
+        heiMessage = 'Existing HEI record found in master list.';
       }
 
       if (!heiId) {
@@ -393,8 +403,14 @@ const approveRegistration = async (req, res) => {
           .limit(1);
         if (heiIlikeError) {
           console.error('Ilike HEI fetch during approval error:', heiIlikeError.message);
+          if (heiStatus === 'lookup') {
+            heiStatus = 'lookup_error';
+            heiMessage = 'Error while looking up HEI record by name. Check server logs.';
+          }
         } else if (heiIlikeRows && heiIlikeRows.length > 0) {
           heiId = heiIlikeRows[0].id;
+          heiStatus = 'existing_name_match';
+          heiMessage = 'Existing HEI record found by name match.';
         }
       }
 
@@ -413,6 +429,8 @@ const approveRegistration = async (req, res) => {
           .single();
         if (heiInsertError) {
           console.error('Insert HEI error during approval:', heiInsertError.message);
+          heiStatus = 'insert_error';
+          heiMessage = 'Error while inserting HEI record. Checking again if a record exists.';
           if (!heiId) {
             const { data: afterErrorHeis, error: afterErrorFetch } = await supabase
               .from('heis')
@@ -421,14 +439,28 @@ const approveRegistration = async (req, res) => {
               .limit(1);
             if (afterErrorFetch) {
               console.error('Post-insert fetch HEI error during approval:', afterErrorFetch.message);
+              heiStatus = 'failed';
+              heiMessage = 'Failed to create or confirm HEI record. Check server logs.';
             } else if (afterErrorHeis && afterErrorHeis.length > 0) {
               heiId = afterErrorHeis[0].id;
+              heiStatus = 'existing_after_error';
+              heiMessage = 'HEI record appears to exist after insert error.';
             }
           }
         } else if (insertedHeis && insertedHeis.id) {
           heiId = insertedHeis.id;
+          heiStatus = 'created';
+          heiMessage = 'New HEI record created in master list.';
         }
       }
+
+      if (!heiId && heiStatus !== 'failed' && heiStatus !== 'insert_error' && heiStatus !== 'lookup_error') {
+        heiStatus = 'failed';
+        heiMessage = 'Unable to create or find HEI record. Check server logs.';
+      }
+    } else {
+      heiStatus = 'skipped_no_name';
+      heiMessage = 'HEI name missing on registration; HEI record not created.';
     }
 
     let createdUsername = null;
@@ -492,7 +524,14 @@ const approveRegistration = async (req, res) => {
       }
     }
 
-    return res.status(200).json({ success: true, username: createdUsername || null });
+    return res.status(200).json({
+      success: true,
+      username: createdUsername || null,
+      hei_id: heiId || null,
+      hei_name: heiName || null,
+      hei_status: heiStatus,
+      hei_message: heiMessage
+    });
   } catch (err) {
     console.error('Approve registration exception:', err.message);
     return res.status(500).json({ error: 'Server error: ' + err.message });

@@ -176,8 +176,31 @@ const AdminRegistrations = () => {
         throw new Error(data.error || 'Failed to approve registration');
       }
       setRegistrations(registrations.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
+
+      let messageLines = [];
+
       if (data.username) {
-        alert(`Account created.\n\nUsername: ${data.username}\nDefault password: CHED@1994`);
+        messageLines.push(`Account created.`);
+        messageLines.push(``);
+        messageLines.push(`Username: ${data.username}`);
+        messageLines.push(`Default password: CHED@1994`);
+      }
+
+      if (data.hei_status || data.hei_message || data.hei_id || data.hei_name) {
+        const heiLabel = data.hei_name ? data.hei_name : 'HEI';
+        const statusText = data.hei_message
+          ? data.hei_message
+          : (data.hei_status || 'HEI record status unknown.');
+
+        if (messageLines.length > 0) {
+          messageLines.push(``);
+        }
+        messageLines.push(`HEI: ${heiLabel}`);
+        messageLines.push(`HEI record status: ${statusText}`);
+      }
+
+      if (messageLines.length > 0) {
+        alert(messageLines.join('\n'));
       }
     } catch (err) {
       console.error('Approve registration error:', err);
