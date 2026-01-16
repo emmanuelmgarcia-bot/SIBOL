@@ -44,8 +44,38 @@ select create_ched_admin('ched_region11', 'Region 11');
 select create_ched_admin('ched_region12', 'Region 12');
 select create_ched_admin('ched_region13', 'Region 13');
 
--- Special regions
 select create_ched_admin('ched_ncr', 'NCR');
 select create_ched_admin('ched_car', 'CAR');
 select create_ched_admin('ched_barmm', 'BARMM');
 
+create or replace function public.login_profile(p_username text, p_password text)
+returns table(
+  id uuid,
+  username text,
+  role text,
+  assigned_region text,
+  hei_id uuid
+)
+language sql
+as $$
+  select
+    p.id,
+    p.username,
+    p.role,
+    p.assigned_region,
+    p.hei_id
+  from public.profiles p
+  where p.username = p_username
+    and p.password_hash = crypt(p_password, p.password_hash);
+$$;
+
+create or replace function public.reset_password_default(p_username text)
+returns void
+language plpgsql
+as $$
+begin
+  update public.profiles
+  set password_hash = crypt('CHED@1994', gen_salt('bf'))
+  where username = p_username;
+end;
+$$;
