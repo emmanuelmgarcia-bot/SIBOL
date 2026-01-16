@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   BookOpen, 
   GraduationCap, 
   FileText, 
-  Users, 
+  Users,
+  User,
   LogOut 
 } from 'lucide-react';
 
@@ -17,8 +18,27 @@ const AdminLayout = ({ children }) => {
   const isActive = (path) => location.pathname === path;
 
   const handleLogout = () => {
+    localStorage.removeItem('sibol_token');
+    localStorage.removeItem('sibol_user');
     navigate('/login/admin');
   };
+
+  useEffect(() => {
+    const stored = localStorage.getItem('sibol_user');
+    if (!stored) {
+      navigate('/login/admin');
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stored);
+      const mustChange = !!parsed.must_change_password;
+      if (mustChange && location.pathname !== '/admin/account') {
+        navigate('/admin/account');
+      }
+    } catch (e) {
+      navigate('/login/admin');
+    }
+  }, [location.pathname, navigate]);
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans">
@@ -58,6 +78,10 @@ const AdminLayout = ({ children }) => {
 
           <Link to="/admin/submissions" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/submissions') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
             <FileText size={18} /> Submissions
+          </Link>
+
+          <Link to="/admin/account" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/account') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+            <User size={18} /> Account
           </Link>
 
           <Link to="/admin/registrations" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/registrations') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>

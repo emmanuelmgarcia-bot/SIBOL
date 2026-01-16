@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -9,14 +9,39 @@ import {
   Upload, 
   ChevronDown, 
   ChevronRight, 
-  LogOut 
+  LogOut,
+  User
 } from 'lucide-react';
 
 const HEILayout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [formsOpen, setFormsOpen] = useState(true);
 
   const isActive = (path) => location.pathname === path;
+
+  useEffect(() => {
+    const stored = localStorage.getItem('sibol_user');
+    if (!stored) {
+      navigate('/login');
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stored);
+      const mustChange = !!parsed.must_change_password;
+      if (mustChange && location.pathname !== '/hei/account') {
+        navigate('/hei/account');
+      }
+    } catch (e) {
+      navigate('/login');
+    }
+  }, [location.pathname, navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('sibol_token');
+    localStorage.removeItem('sibol_user');
+    navigate('/login');
+  };
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans">
@@ -69,13 +94,19 @@ const HEILayout = ({ children }) => {
           <Link to="/hei/faculty" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/hei/faculty') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
             <Users size={18} /> Faculty
           </Link>
+          <Link to="/hei/account" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/hei/account') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+            <User size={18} /> Account
+          </Link>
           <Link to="/hei/submissions" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/hei/submissions') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
             <Upload size={18} /> Submissions
           </Link>
         </nav>
 
         <div className="p-4 border-t border-blue-800">
-          <button className="flex items-center gap-2 text-red-300 hover:text-red-100 w-full px-4 py-2 text-sm">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-red-300 hover:text-red-100 w-full px-4 py-2 text-sm"
+          >
             <LogOut size={16} /> Logout
           </button>
         </div>

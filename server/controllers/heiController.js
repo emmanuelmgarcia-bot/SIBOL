@@ -934,5 +934,6 @@ module.exports = {
   createSubject,
   getSubjects,
   updateSubjectStatus,
-  deleteSubject
+  deleteSubject,
+  downloadSubmissionPdf
 };

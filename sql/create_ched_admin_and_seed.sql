@@ -1,9 +1,15 @@
 -- Ensure pgcrypto is available for bcrypt hashing
 create extension if not exists pgcrypto;
 
--- Add password_hash column if it does not exist yet
 alter table public.profiles
 add column if not exists password_hash text;
+
+alter table public.profiles
+add column if not exists must_change_password boolean default true;
+
+update public.profiles
+set must_change_password = true
+where must_change_password is null;
 
 -- Helper function to create or update CHED admin users
 create or replace function public.create_ched_admin(p_username text, p_assigned_region text)
@@ -54,7 +60,8 @@ returns table(
   username text,
   role text,
   assigned_region text,
-  hei_id uuid
+  hei_id uuid,
+  must_change_password boolean
 )
 language sql
 as $$
@@ -63,7 +70,8 @@ as $$
     p.username,
     p.role,
     p.assigned_region,
-    p.hei_id
+    p.hei_id,
+    coalesce(p.must_change_password, false) as must_change_password
   from public.profiles p
   where p.username = p_username
     and p.password_hash = crypt(p_password, p.password_hash);
@@ -75,7 +83,31 @@ language plpgsql
 as $$
 begin
   update public.profiles
-  set password_hash = crypt('CHED@1994', gen_salt('bf'))
+  set password_hash = crypt('CHED@1994', gen_salt('bf')),
+      must_change_password = true
   where username = p_username;
+end;
+$$;
+
+create or replace function public.update_profile_credentials(
+  p_user_id uuid,
+  p_new_username text,
+  p_new_password text,
+  p_is_admin boolean
+)
+returns void
+language plpgsql
+as $$
+begin
+  update public.profiles
+  set
+    username = case
+      when p_is_admin then username
+      when coalesce(trim(p_new_username), '') = '' then username
+      else trim(p_new_username)
+    end,
+    password_hash = crypt(p_new_password, gen_salt('bf')),
+    must_change_password = false
+  where id = p_user_id;
 end;
 $$;

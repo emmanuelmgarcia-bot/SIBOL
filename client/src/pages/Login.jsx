@@ -50,15 +50,20 @@ const Login = () => {
         throw new Error(data.error || 'Login failed');
       }
 
-      // LOGIN SUCCESS
       console.log("Login Successful:", data.user);
 
-      // 1. Save Token & User to LocalStorage
       localStorage.setItem('sibol_token', data.token);
       localStorage.setItem('sibol_user', JSON.stringify(data.user));
 
-      // 2. Redirect based on role
-      if (isAdmin) {
+      const mustChange = !!(data.user && data.user.must_change_password);
+
+      if (mustChange) {
+        if (isAdmin) {
+          navigate('/admin/account');
+        } else {
+          navigate('/hei/account');
+        }
+      } else if (isAdmin) {
         navigate('/admin/dashboard');
       } else {
         navigate('/hei/dashboard');

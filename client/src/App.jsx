@@ -17,6 +17,7 @@ import Form2 from './pages/hei/Form2';
 import SubjectManager from './pages/hei/SubjectManager'; // Handles Subjects & IP Specializations
 import ProgramManager from './pages/hei/ProgramManager'; // Handles CHED Degree Programs
 import HEISubmissions from './pages/hei/HEISubmissions'; // Handles Submission History
+import HEIAccount from './pages/hei/HEIAccount';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -24,6 +25,7 @@ import AdminSubjects from './pages/admin/AdminSubjects';
 import AdminPrograms from './pages/admin/AdminPrograms';
 import AdminSubmissions from './pages/admin/AdminSubmissions';
 import AdminRegistrations from './pages/admin/AdminRegistrations';
+import AdminAccount from './pages/admin/AdminAccount';
 
 function App() {
   return (
@@ -60,6 +62,7 @@ function App() {
               
               {/* History & Status */}
               <Route path="submissions" element={<HEISubmissions />} />
+              <Route path="account" element={<HEIAccount />} />
             </Routes>
           </HEILayout>
         } />
@@ -75,6 +78,7 @@ function App() {
               <Route path="programs" element={<AdminPrograms />} />
               <Route path="submissions" element={<AdminSubmissions />} />
               <Route path="registrations" element={<AdminRegistrations />} />
+              <Route path="account" element={<AdminAccount />} />
             </Routes>
           </AdminLayout>
         } />

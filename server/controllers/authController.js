@@ -40,7 +40,8 @@ const loginUser = async (req, res) => {
         username: profile.username,
         role: profile.role,
         assigned_region: profile.assigned_region,
-        hei_id: profile.hei_id
+        hei_id: profile.hei_id,
+        must_change_password: profile.must_change_password
       }
     });
   } catch (err) {
@@ -73,4 +74,60 @@ const resetPasswordToDefault = async (req, res) => {
   }
 };
 
-module.exports = { loginUser, resetPasswordToDefault };
+const updateCredentials = async (req, res) => {
+  const { userId, username, newUsername, currentPassword, newPassword, isAdmin } = req.body;
+
+  if (!userId || !username || !currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Required fields are missing' });
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('login_profile', {
+      p_username: username,
+      p_password: currentPassword
+    });
+
+    if (error) {
+      console.error('Supabase login_profile error during update:', error.message);
+      return res.status(500).json({ error: 'Server error during credential verification: ' + error.message });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    const { error: updateError } = await supabase.rpc('update_profile_credentials', {
+      p_user_id: userId,
+      p_new_username: newUsername || null,
+      p_new_password: newPassword,
+      p_is_admin: !!isAdmin
+    });
+
+    if (updateError) {
+      console.error('Supabase update_profile_credentials error:', updateError.message);
+      return res.status(500).json({ error: 'Server error during credential update: ' + updateError.message });
+    }
+
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, username, role, assigned_region, hei_id, must_change_password')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) {
+      console.error('Supabase select profiles error:', profileError.message);
+      return res.status(500).json({ error: 'Server error loading updated profile: ' + profileError.message });
+    }
+
+    return res.status(200).json({
+      message: 'Credentials updated successfully',
+      token: 'mock-token',
+      user: profileData
+    });
+  } catch (err) {
+    console.error('Update Credentials Error:', err.message);
+    return res.status(500).json({ error: 'Server error during credential update: ' + err.message });
+  }
+};
+
+module.exports = { loginUser, resetPasswordToDefault, updateCredentials };
