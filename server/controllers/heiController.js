@@ -594,6 +594,174 @@ const updateProgramRequestStatus = async (req, res) => {
   }
 };
 
+const updateProgramRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      heiId,
+      campus,
+      programCode,
+      programTitle,
+      fileName,
+      mimeType,
+      fileBase64
+    } = req.body;
+
+    if (!id || !heiId) {
+      return res.status(400).json({ error: 'Request id and heiId are required' });
+    }
+
+    const parsedHeiId = parseInt(heiId, 10);
+    if (Number.isNaN(parsedHeiId)) {
+      return res.status(400).json({ error: 'Invalid heiId value' });
+    }
+
+    const { data: requestRow, error: requestError } = await supabase
+      .from('program_requests')
+      .select('id, hei_id, status')
+      .eq('id', id)
+      .single();
+
+    if (requestError) {
+      console.error('Supabase fetch program request for update error:', requestError.message);
+      return res.status(500).json({ error: 'Failed to load program request: ' + requestError.message });
+    }
+
+    if (!requestRow) {
+      return res.status(404).json({ error: 'Program request not found' });
+    }
+
+    if (requestRow.hei_id !== parsedHeiId) {
+      return res.status(403).json({ error: 'Not allowed to modify program request for another HEI' });
+    }
+
+    if (requestRow.status === 'Approved') {
+      return res.status(400).json({ error: 'Approved program requests cannot be modified' });
+    }
+
+    const updatePayload = {};
+
+    if (campus) {
+      updatePayload.campus = campus;
+    }
+    if (programCode) {
+      updatePayload.program_code = programCode;
+    }
+    if (programTitle) {
+      updatePayload.program_title = programTitle;
+    }
+
+    if (fileName && mimeType && fileBase64) {
+      const normalizedMime = String(mimeType).toLowerCase();
+      const isPdf =
+        normalizedMime.includes('pdf') ||
+        (fileName && String(fileName).toLowerCase().endsWith('.pdf'));
+
+      if (!isPdf) {
+        return res.status(400).json({ error: 'Only PDF curriculum files are allowed' });
+      }
+
+      const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || undefined;
+
+      try {
+        const fileData = await uploadBase64File({
+          fileName,
+          mimeType,
+          dataBase64: fileBase64,
+          folderId
+        });
+
+        updatePayload.file_id = fileData.id;
+        updatePayload.file_name = fileName || null;
+        updatePayload.web_view_link = fileData.webViewLink || null;
+        updatePayload.web_content_link = fileData.webContentLink || null;
+        updatePayload.status = 'For Approval';
+      } catch (uploadErr) {
+        console.error('Program request curriculum update upload error:', uploadErr.message);
+        if (uploadErr.message && uploadErr.message.includes('Google service account credentials')) {
+          return res.status(500).json({ error: 'Google Drive credentials are not configured on the server' });
+        }
+        return res.status(500).json({ error: 'Failed to upload curriculum file' });
+      }
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    const { data, error: updateError } = await supabase
+      .from('program_requests')
+      .update(updatePayload)
+      .eq('id', id)
+      .select('id, hei_id, campus, program_code, program_title, status, file_name, web_view_link, web_content_link, created_at')
+      .single();
+
+    if (updateError) {
+      console.error('Supabase update program request error:', updateError.message);
+      return res.status(500).json({ error: 'Failed to update program request: ' + updateError.message });
+    }
+
+    return res.status(200).json(data);
+  } catch (err) {
+    console.error('Update program request exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const deleteProgramRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { heiId } = req.body || {};
+
+    if (!id || !heiId) {
+      return res.status(400).json({ error: 'Request id and heiId are required' });
+    }
+
+    const parsedHeiId = parseInt(heiId, 10);
+    if (Number.isNaN(parsedHeiId)) {
+      return res.status(400).json({ error: 'Invalid heiId value' });
+    }
+
+    const { data: requestRow, error: requestError } = await supabase
+      .from('program_requests')
+      .select('id, hei_id, status')
+      .eq('id', id)
+      .single();
+
+    if (requestError) {
+      console.error('Supabase fetch program request for delete error:', requestError.message);
+      return res.status(500).json({ error: 'Failed to load program request: ' + requestError.message });
+    }
+
+    if (!requestRow) {
+      return res.status(404).json({ error: 'Program request not found' });
+    }
+
+    if (requestRow.hei_id !== parsedHeiId) {
+      return res.status(403).json({ error: 'Not allowed to delete program request for another HEI' });
+    }
+
+    if (requestRow.status === 'Approved') {
+      return res.status(400).json({ error: 'Approved program requests cannot be deleted' });
+    }
+
+    const { error: deleteError } = await supabase
+      .from('program_requests')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error('Supabase delete program request error:', deleteError.message);
+      return res.status(500).json({ error: 'Failed to delete program request: ' + deleteError.message });
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('Delete program request exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
 const getFaculty = async (req, res) => {
   try {
     const { heiId, campus } = req.query;
@@ -920,6 +1088,8 @@ module.exports = {
   createProgramRequest,
   listProgramRequests,
   updateProgramRequestStatus,
+   updateProgramRequest,
+   deleteProgramRequest,
   getFaculty,
   createFaculty,
   updateFaculty,

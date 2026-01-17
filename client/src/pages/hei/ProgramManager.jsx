@@ -5,11 +5,15 @@ const ProgramManager = () => {
   const [myPrograms, setMyPrograms] = useState([]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProgram, setEditingProgram] = useState(null);
+  const [editCurriculumFile, setEditCurriculumFile] = useState(null);
   
   // Form State
   const [selectedProgramCode, setSelectedProgramCode] = useState('');
   const [curriculumFile, setCurriculumFile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
@@ -126,13 +130,131 @@ const ProgramManager = () => {
     }
   };
 
-  const handleDelete = (id) => {
-     // For now, maybe just hide it or we need a delete endpoint for requests if they are not approved yet?
-     // The requirements didn't specify deleting requests, but usually you can cancel if pending.
-     // For now, I'll just show an alert that it's not implemented or remove it from UI state if strictly needed.
-     // Since the previous code had a delete, let's leave a placeholder or remove it if not supported by backend.
-     // The backend `deleteMasterProgram` is for admins. There is no `deleteProgramRequest` yet.
-     alert("Cancellation of requests is not yet supported.");
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm('Cancel this program request?');
+    if (!confirmed) {
+      return;
+    }
+
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const heiId = user && user.hei_id ? user.hei_id : null;
+
+    if (!heiId) {
+      alert('User HEI ID not found');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiBase}/api/heis/programs/requests/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ heiId })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cancel program request');
+      }
+
+      setMyPrograms(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      console.error('Delete program request error:', err);
+      alert(err.message || 'Failed to cancel program request');
+    }
+  };
+
+  const openEditModal = (prog) => {
+    setEditingProgram(prog);
+    setEditCurriculumFile(null);
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingProgram(null);
+    setEditCurriculumFile(null);
+  };
+
+  const handleEditSave = async (e) => {
+    e.preventDefault();
+
+    if (!editingProgram) {
+      return;
+    }
+
+    if (!editCurriculumFile) {
+      alert('Please select a curriculum PDF to upload.');
+      return;
+    }
+
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const heiId = user && user.hei_id ? user.hei_id : null;
+
+    if (!heiId) {
+      alert('User HEI ID not found');
+      return;
+    }
+
+    try {
+      setEditSaving(true);
+
+      const isPdf =
+        (editCurriculumFile.type && editCurriculumFile.type.toLowerCase().includes('pdf')) ||
+        (editCurriculumFile.name && editCurriculumFile.name.toLowerCase().endsWith('.pdf'));
+
+      if (!isPdf) {
+        alert('Please upload a PDF file for the curriculum.');
+        setEditSaving(false);
+        return;
+      }
+
+      const readerResult = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(editCurriculumFile);
+      });
+
+      const base64 = typeof readerResult === 'string' ? readerResult.split(',')[1] : '';
+
+      const payload = {
+        heiId,
+        programCode: editingProgram.program_code,
+        programTitle: editingProgram.program_title,
+        fileName: editCurriculumFile.name,
+        mimeType: editCurriculumFile.type || 'application/pdf',
+        fileBase64: base64
+      };
+
+      const response = await fetch(`${apiBase}/api/heis/programs/requests/${encodeURIComponent(editingProgram.id)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update program request');
+      }
+
+      setMyPrograms(prev =>
+        prev.map(p => (p.id === data.id ? data : p))
+      );
+
+      closeEditModal();
+      alert('Curriculum updated and resubmitted for approval.');
+    } catch (err) {
+      console.error('Update curriculum error:', err);
+      alert(err.message || 'Failed to update curriculum file');
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   return (
@@ -155,7 +277,7 @@ const ProgramManager = () => {
                     <th className="p-4 border-b">Program Name</th>
                     <th className="p-4 border-b text-center">Curriculum</th>
                     <th className="p-4 border-b text-center">Status</th>
-                    {/* <th className="p-4 border-b text-center">Action</th> */}
+                    <th className="p-4 border-b text-center">Action</th>
                 </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -191,9 +313,28 @@ const ProgramManager = () => {
                                     {prog.status}
                                 </span>
                             </td>
-                            {/* <td className="p-4 text-center">
-                                <button onClick={() => handleDelete(prog.id)} className="text-red-500 hover:text-red-700 font-bold text-xs uppercase">Remove</button>
-                            </td> */}
+                            <td className="p-4 text-center">
+                                {prog.status === 'Approved' ? (
+                                    <span className="text-xs text-gray-400">No changes allowed</span>
+                                ) : (
+                                    <div className="flex justify-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => openEditModal(prog)}
+                                            className="text-indigo-600 hover:text-indigo-800 text-xs font-bold uppercase"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDelete(prog.id)}
+                                            className="text-red-500 hover:text-red-700 text-xs font-bold uppercase"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                )}
+                            </td>
                         </tr>
                     ))
                 )}
@@ -239,6 +380,51 @@ const ProgramManager = () => {
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                         <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg text-sm">Cancel</button>
                         <button type="submit" disabled={saving} className={`px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 text-sm ${saving ? 'opacity-70 cursor-not-allowed' : ''}`}>{saving ? 'Submitting...' : 'Submit for Approval'}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
+    </div>
+
+      {isEditModalOpen && editingProgram && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+                <div className="bg-indigo-50 px-6 py-4 border-b border-indigo-100 flex justify-between items-center">
+                    <h2 className="text-lg font-bold text-indigo-900">Update Curriculum</h2>
+                    <button onClick={closeEditModal} className="text-gray-400 hover:text-red-500 font-bold text-2xl">&times;</button>
+                </div>
+                <form onSubmit={handleEditSave} className="p-6 space-y-4">
+                    <div>
+                        <p className="text-xs text-gray-500 mb-1">Program</p>
+                        <p className="text-sm font-semibold text-gray-800">
+                            {editingProgram.program_code} - {editingProgram.program_title}
+                        </p>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Upload New Curriculum (PDF only)</label>
+                        <input 
+                            type="file" 
+                            accept="application/pdf"
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                            onChange={(e) => setEditCurriculumFile(e.target.files[0])}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button
+                            type="button"
+                            onClick={closeEditModal}
+                            className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg text-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={editSaving}
+                            className={`px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 text-sm ${editSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                            {editSaving ? 'Saving...' : 'Save Changes'}
+                        </button>
                     </div>
                 </form>
             </div>

@@ -9,6 +9,8 @@ const {
   createProgramRequest,
   listProgramRequests,
   updateProgramRequestStatus,
+  updateProgramRequest,
+  deleteProgramRequest,
   getFaculty,
   createFaculty,
   updateFaculty,
@@ -34,6 +36,8 @@ router.delete('/programs/master/:id', deleteMasterProgram);
 router.post('/programs/requests', createProgramRequest);
 router.get('/programs/requests', listProgramRequests);
 router.post('/programs/requests/:id/status', updateProgramRequestStatus);
+router.put('/programs/requests/:id', updateProgramRequest);
+router.delete('/programs/requests/:id', deleteProgramRequest);
 
 router.get('/faculty', getFaculty);
 router.post('/faculty', createFaculty);
