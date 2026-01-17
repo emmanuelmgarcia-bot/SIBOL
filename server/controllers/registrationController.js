@@ -312,7 +312,7 @@ const approveRegistration = async (req, res) => {
 
     const { data: rows, error: fetchError } = await supabase
       .from('registrations')
-      .select('id, region, hei_name, campus, first_name, province, city, barangay, address_line1, address_line2, zip_code')
+      .select('id, region, status, hei_name, campus, first_name, province, city, barangay, address_line1, address_line2, zip_code')
       .eq('id', id)
       .single();
 
@@ -324,6 +324,8 @@ const approveRegistration = async (req, res) => {
     if (!rows) {
       return res.status(404).json({ error: 'Registration not found' });
     }
+
+    const previousStatus = rows.status || 'For Approval';
 
     if (region !== 'ALL' && rows.region !== region) {
       return res.status(403).json({ error: 'Not allowed to approve registration from another region' });
@@ -463,6 +465,25 @@ const approveRegistration = async (req, res) => {
       heiMessage = 'HEI name missing on registration; HEI record not created.';
     }
 
+    const heiErrorStatuses = ['failed', 'insert_error', 'lookup_error', 'skipped_no_name', 'not_processed'];
+    const hasHeiError = !heiId || heiErrorStatuses.includes(heiStatus);
+
+    if (hasHeiError) {
+      const revertStatus = previousStatus || 'For Approval';
+      const { error: revertError } = await supabase
+        .from('registrations')
+        .update({ status: revertStatus })
+        .eq('id', id);
+      if (revertError) {
+        console.error('Revert registration status error after HEI failure:', revertError.message);
+      }
+      return res.status(500).json({
+        error: heiMessage || 'Failed to create or confirm HEI record. Approval aborted.',
+        hei_status: heiStatus,
+        hei_message: heiMessage
+      });
+    }
+
     let createdUsername = null;
     let base = repFirstName;
 
@@ -549,7 +570,7 @@ const deleteRegistration = async (req, res) => {
 
     const { data: rows, error: fetchError } = await supabase
       .from('registrations')
-      .select('id, region')
+      .select('id, region, hei_name, campus')
       .eq('id', id)
       .single();
 
@@ -566,6 +587,14 @@ const deleteRegistration = async (req, res) => {
       return res.status(403).json({ error: 'Not allowed to delete registration from another region' });
     }
 
+    const heiNameRaw = rows.hei_name || '';
+    const campusRaw = rows.campus || '';
+    const regRegionRaw = rows.region || '';
+
+    const heiName = heiNameRaw.trim();
+    const campusName = campusRaw.trim();
+    const regRegion = regRegionRaw.trim();
+
     const { error: deleteError } = await supabase
       .from('registrations')
       .delete()
@@ -574,6 +603,30 @@ const deleteRegistration = async (req, res) => {
     if (deleteError) {
       console.error('Delete registration error:', deleteError.message);
       return res.status(500).json({ error: 'Failed to delete registration: ' + deleteError.message });
+    }
+
+    if (heiName) {
+      try {
+        let heiDelete = supabase
+          .from('heis')
+          .delete()
+          .eq('name', heiName);
+
+        if (campusName) {
+          heiDelete = heiDelete.eq('campus_name', campusName);
+        }
+
+        if (regRegion) {
+          heiDelete = heiDelete.eq('region_destination', regRegion);
+        }
+
+        const { error: heiDeleteError } = await heiDelete;
+        if (heiDeleteError) {
+          console.error('Delete HEI error during registration delete:', heiDeleteError.message);
+        }
+      } catch (heiDeleteException) {
+        console.error('Delete HEI exception during registration delete:', heiDeleteException.message);
+      }
     }
 
     return res.status(200).json({ success: true });

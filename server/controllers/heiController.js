@@ -406,35 +406,38 @@ const createProgramRequest = async (req, res) => {
       fileBase64
     } = req.body;
 
-    if (!heiId || !campus || !programCode || !programTitle || !fileName || !mimeType || !fileBase64) {
+    if (!heiId || !campus || !programCode || !programTitle) {
       return res.status(400).json({ error: 'Missing required fields for program request' });
     }
 
-    const normalizedMime = String(mimeType).toLowerCase();
-    const isPdf =
-      normalizedMime.includes('pdf') ||
-      (fileName && String(fileName).toLowerCase().endsWith('.pdf'));
+    let fileData = { id: null, webViewLink: null, webContentLink: null };
 
-    if (!isPdf) {
-      return res.status(400).json({ error: 'Only PDF curriculum files are allowed' });
-    }
+    if (fileName && mimeType && fileBase64) {
+      const normalizedMime = String(mimeType).toLowerCase();
+      const isPdf =
+        normalizedMime.includes('pdf') ||
+        (fileName && String(fileName).toLowerCase().endsWith('.pdf'));
 
-    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || undefined;
-
-    let fileData;
-    try {
-      fileData = await uploadBase64File({
-        fileName,
-        mimeType,
-        dataBase64: fileBase64,
-        folderId
-      });
-    } catch (uploadErr) {
-      console.error('Program request upload error:', uploadErr.message);
-      if (uploadErr.message && uploadErr.message.includes('Google service account credentials')) {
-        return res.status(500).json({ error: 'Google Drive credentials are not configured on the server' });
+      if (!isPdf) {
+        return res.status(400).json({ error: 'Only PDF curriculum files are allowed' });
       }
-      return res.status(500).json({ error: 'Failed to upload curriculum file' });
+
+      const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || undefined;
+
+      try {
+        fileData = await uploadBase64File({
+          fileName,
+          mimeType,
+          dataBase64: fileBase64,
+          folderId
+        });
+      } catch (uploadErr) {
+        console.error('Program request upload error:', uploadErr.message);
+        if (uploadErr.message && uploadErr.message.includes('Google service account credentials')) {
+          return res.status(500).json({ error: 'Google Drive credentials are not configured on the server' });
+        }
+        return res.status(500).json({ error: 'Failed to upload curriculum file' });
+      }
     }
 
     const { data, error } = await supabase
@@ -446,7 +449,7 @@ const createProgramRequest = async (req, res) => {
           program_code: programCode,
           program_title: programTitle,
           file_id: fileData.id,
-          file_name: fileName,
+          file_name: fileName || null,
           web_view_link: fileData.webViewLink || null,
           web_content_link: fileData.webContentLink || null,
           status: 'For Approval'

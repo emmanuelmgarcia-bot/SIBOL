@@ -51,35 +51,13 @@ const ProgramManager = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!selectedProgramCode || !curriculumFile) return;
+    if (!selectedProgramCode) return;
 
-        const programDetails = masterPrograms.find(p => p.code === selectedProgramCode);
+    const programDetails = masterPrograms.find(p => p.code === selectedProgramCode);
     if (!programDetails) return;
-
-        if (!curriculumFile) {
-          return;
-        }
-
-        const isPdf =
-          (curriculumFile.type && curriculumFile.type.toLowerCase().includes('pdf')) ||
-          (curriculumFile.name && curriculumFile.name.toLowerCase().endsWith('.pdf'));
-
-        if (!isPdf) {
-          alert('Please upload a PDF file for the curriculum.');
-          return;
-        }
 
     try {
         setSaving(true);
-        
-        // Convert file to base64
-        const readerResult = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error('Failed to read file'));
-          reader.readAsDataURL(curriculumFile);
-        });
-        const base64 = typeof readerResult === 'string' ? readerResult.split(',')[1] : '';
 
         const userRaw = localStorage.getItem('sibol_user');
         const user = userRaw ? JSON.parse(userRaw) : null;
@@ -90,14 +68,34 @@ const ProgramManager = () => {
         }
 
         const payload = {
-            heiId,
-            campus: 'MAIN', // Default to MAIN for now, or add campus selector if needed
-            programCode: programDetails.code,
-            programTitle: programDetails.title,
-            fileName: curriculumFile.name,
-            mimeType: curriculumFile.type || 'application/pdf',
-            fileBase64: base64
+          heiId,
+          campus: 'MAIN',
+          programCode: programDetails.code,
+          programTitle: programDetails.title
         };
+
+        if (curriculumFile) {
+          const isPdf =
+            (curriculumFile.type && curriculumFile.type.toLowerCase().includes('pdf')) ||
+            (curriculumFile.name && curriculumFile.name.toLowerCase().endsWith('.pdf'));
+
+          if (!isPdf) {
+            alert('Please upload a PDF file for the curriculum.');
+            return;
+          }
+
+          const readerResult = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsDataURL(curriculumFile);
+          });
+          const base64 = typeof readerResult === 'string' ? readerResult.split(',')[1] : '';
+
+          payload.fileName = curriculumFile.name;
+          payload.mimeType = curriculumFile.type || 'application/pdf';
+          payload.fileBase64 = base64;
+        }
 
         const response = await fetch(`${apiBase}/api/heis/programs/requests`, {
           method: 'POST',

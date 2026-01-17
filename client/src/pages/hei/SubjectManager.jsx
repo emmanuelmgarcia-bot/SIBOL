@@ -85,51 +85,48 @@ const SubjectManager = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    
-    if (!formData.syllabusFile) {
-        alert('Please upload a syllabus file.');
-        return;
-    }
-
-    const file = formData.syllabusFile;
-    const isPdf =
-      (file.type && file.type.toLowerCase().includes('pdf')) ||
-      (file.name && file.name.toLowerCase().endsWith('.pdf'));
-
-    if (!isPdf) {
-        alert('Please upload a PDF file for the syllabus.');
-        return;
-    }
 
     try {
         setSaving(true);
         const { heiId, campus } = getHeiInfo();
 
-        // Convert file to base64
-        const readerResult = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error('Failed to read file'));
-          reader.readAsDataURL(formData.syllabusFile);
-        });
-        const base64 = typeof readerResult === 'string' ? readerResult.split(',')[1] : '';
-
         const payload = {
-            heiId,
-            campus,
-            type: formData.type,
-            code: formData.code,
-            title: formData.title,
-            units: formData.units,
-            govtAuthority: formData.govtAuthority,
-            ayStarted: formData.ayStarted,
-            studentsAy1: formData.studentsAy1,
-            studentsAy2: formData.studentsAy2,
-            studentsAy3: formData.studentsAy3,
-            fileName: formData.syllabusFile.name,
-            mimeType: formData.syllabusFile.type || 'application/pdf',
-            fileBase64: base64
+          heiId,
+          campus,
+          type: formData.type,
+          code: formData.code,
+          title: formData.title,
+          units: formData.units,
+          govtAuthority: formData.govtAuthority,
+          ayStarted: formData.ayStarted,
+          studentsAy1: formData.studentsAy1,
+          studentsAy2: formData.studentsAy2,
+          studentsAy3: formData.studentsAy3
         };
+
+        if (formData.syllabusFile) {
+          const file = formData.syllabusFile;
+          const isPdf =
+            (file.type && file.type.toLowerCase().includes('pdf')) ||
+            (file.name && file.name.toLowerCase().endsWith('.pdf'));
+
+          if (!isPdf) {
+            alert('Please upload a PDF file for the syllabus.');
+            return;
+          }
+
+          const readerResult = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsDataURL(formData.syllabusFile);
+          });
+          const base64 = typeof readerResult === 'string' ? readerResult.split(',')[1] : '';
+
+          payload.fileName = formData.syllabusFile.name;
+          payload.mimeType = formData.syllabusFile.type || 'application/pdf';
+          payload.fileBase64 = base64;
+        }
 
         const response = await fetch(`${apiBase}/api/heis/subjects`, {
           method: 'POST',
