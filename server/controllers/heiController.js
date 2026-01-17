@@ -398,7 +398,6 @@ const createProgramRequest = async (req, res) => {
   try {
     const {
       heiId,
-      campus,
       programCode,
       programTitle,
       fileName,
@@ -406,9 +405,26 @@ const createProgramRequest = async (req, res) => {
       fileBase64
     } = req.body;
 
-    if (!heiId || !campus || !programCode || !programTitle) {
+    if (!heiId || !programCode || !programTitle) {
       return res.status(400).json({ error: 'Missing required fields for program request' });
     }
+
+    const { data: heiRow, error: heiError } = await supabase
+      .from('heis')
+      .select('id, campus_name')
+      .eq('id', heiId)
+      .single();
+
+    if (heiError) {
+      console.error('Supabase fetch HEI for program request error:', heiError.message);
+      return res.status(500).json({ error: 'Failed to load HEI for program request: ' + heiError.message });
+    }
+
+    if (!heiRow) {
+      return res.status(400).json({ error: 'HEI not found for program request' });
+    }
+
+    const campusValue = heiRow.campus_name || null;
 
     let fileData = { id: null, webViewLink: null, webContentLink: null };
 
@@ -445,7 +461,7 @@ const createProgramRequest = async (req, res) => {
       .insert([
         {
           hei_id: heiId,
-          campus,
+          campus: campusValue,
           program_code: programCode,
           program_title: programTitle,
           file_id: fileData.id,
@@ -506,6 +522,10 @@ const listProgramRequests = async (req, res) => {
       query = query.in('hei_id', heiIds);
     } else {
       return res.status(400).json({ error: 'Region or heiId is required' });
+    }
+
+    if (campus) {
+      query = query.eq('campus', campus);
     }
 
     if (status) {
@@ -788,18 +808,35 @@ const getFaculty = async (req, res) => {
 
 const createFaculty = async (req, res) => {
   try {
-    const { heiId, campus, name, status, education } = req.body;
+    const { heiId, name, status, education } = req.body;
 
-    if (!heiId || !campus || !name || !status || !education) {
+    if (!heiId || !name || !status || !education) {
       return res.status(400).json({ error: 'All fields are required' });
     }
+
+    const { data: heiRow, error: heiError } = await supabase
+      .from('heis')
+      .select('id, campus_name')
+      .eq('id', heiId)
+      .single();
+
+    if (heiError) {
+      console.error('Supabase fetch HEI for faculty error:', heiError.message);
+      return res.status(500).json({ error: 'Failed to load HEI for faculty: ' + heiError.message });
+    }
+
+    if (!heiRow) {
+      return res.status(400).json({ error: 'HEI not found for faculty' });
+    }
+
+    const campusValue = heiRow.campus_name || null;
 
     const { data, error } = await supabase
       .from('faculty')
       .insert([
         {
           hei_id: heiId,
-          campus,
+          campus: campusValue,
           name,
           status,
           education
@@ -877,7 +914,6 @@ const createSubject = async (req, res) => {
   try {
     const {
       heiId,
-      campus,
       type,
       code,
       title,
@@ -892,9 +928,26 @@ const createSubject = async (req, res) => {
       fileBase64
     } = req.body;
 
-    if (!heiId || !campus || !type || !code || !title) {
+    if (!heiId || !type || !code || !title) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+
+    const { data: heiRow, error: heiError } = await supabase
+      .from('heis')
+      .select('id, campus_name')
+      .eq('id', heiId)
+      .single();
+
+    if (heiError) {
+      console.error('Supabase fetch HEI for subject error:', heiError.message);
+      return res.status(500).json({ error: 'Failed to load HEI for subject: ' + heiError.message });
+    }
+
+    if (!heiRow) {
+      return res.status(400).json({ error: 'HEI not found for subject' });
+    }
+
+    const campusValue = heiRow.campus_name || null;
 
     let fileData = { id: null, webViewLink: null, webContentLink: null };
     
@@ -927,7 +980,7 @@ const createSubject = async (req, res) => {
       .insert([
         {
           hei_id: heiId,
-          campus,
+          campus: campusValue,
           type,
           code,
           title,

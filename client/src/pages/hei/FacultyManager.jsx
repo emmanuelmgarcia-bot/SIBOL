@@ -10,21 +10,20 @@ const FacultyManager = () => {
   const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
 
   const getHeiInfo = () => {
-      const userRaw = localStorage.getItem('sibol_user');
-      const user = userRaw ? JSON.parse(userRaw) : null;
-      return {
-          heiId: user?.hei_id,
-          campus: 'MAIN' // Default or fetch from user if available. Ideally this should come from user profile.
-      };
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    return {
+      heiId: user?.hei_id
+    };
   };
 
   const fetchFaculty = async () => {
-    const { heiId, campus } = getHeiInfo();
+    const { heiId } = getHeiInfo();
     if (!heiId) return;
 
     try {
       setLoading(true);
-      const res = await fetch(`${apiBase}/api/heis/faculty?heiId=${encodeURIComponent(heiId)}&campus=${encodeURIComponent(campus)}`);
+      const res = await fetch(`${apiBase}/api/heis/faculty?heiId=${encodeURIComponent(heiId)}`);
       const data = await res.json();
       if (res.ok) {
         setFaculty(data);
@@ -68,7 +67,7 @@ const FacultyManager = () => {
   };
 
   const handleSubmit = async () => {
-      const { heiId, campus } = getHeiInfo();
+      const { heiId } = getHeiInfo();
       if (!heiId) {
           alert('User not authenticated correctly (missing HEI ID)');
           return;
@@ -84,7 +83,6 @@ const FacultyManager = () => {
           let method = 'POST';
           let body = {
               heiId,
-              campus,
               name: formData.name,
               status: formData.status,
               education: formData.education

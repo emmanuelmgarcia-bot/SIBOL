@@ -31,18 +31,17 @@ const SubjectManager = () => {
       const userRaw = localStorage.getItem('sibol_user');
       const user = userRaw ? JSON.parse(userRaw) : null;
       return {
-          heiId: user?.hei_id,
-          campus: 'MAIN' // Default
+          heiId: user?.hei_id
       };
   };
 
   const fetchSubjects = async () => {
-    const { heiId, campus } = getHeiInfo();
+    const { heiId } = getHeiInfo();
     if (!heiId) return;
 
     try {
       setLoading(true);
-      const res = await fetch(`${apiBase}/api/heis/subjects?heiId=${encodeURIComponent(heiId)}&campus=${encodeURIComponent(campus)}`);
+      const res = await fetch(`${apiBase}/api/heis/subjects?heiId=${encodeURIComponent(heiId)}`);
       const data = await res.json();
       if (res.ok) {
         setSubjects(data);
@@ -88,11 +87,10 @@ const SubjectManager = () => {
 
     try {
         setSaving(true);
-        const { heiId, campus } = getHeiInfo();
+        const { heiId } = getHeiInfo();
 
         const payload = {
           heiId,
-          campus,
           type: formData.type,
           code: formData.code,
           title: formData.title,

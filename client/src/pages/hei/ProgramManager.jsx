@@ -73,7 +73,6 @@ const ProgramManager = () => {
 
         const payload = {
           heiId,
-          campus: 'MAIN',
           programCode: programDetails.code,
           programTitle: programDetails.title
         };
