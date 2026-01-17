@@ -288,17 +288,14 @@ const AdminSubjects = () => {
                             <th className="p-4">Title</th>
                             <th className="p-4 text-center">Status</th>
                             <th className="p-4 text-center">Syllabus</th>
-                            {/* CONDITIONAL COLUMN: Only show Action if 'For Approval' */}
-                            {activeTab === 'For Approval' && (
-                                <th className="p-4 text-center">Action</th>
-                            )}
+                            <th className="p-4 text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {loadingSubjects ? (
-                             <tr><td colSpan={activeTab === 'For Approval' ? 6 : 5} className="p-8 text-center text-gray-500">Loading subjects...</td></tr>
+                             <tr><td colSpan={6} className="p-8 text-center text-gray-500">Loading subjects...</td></tr>
                         ) : filteredSubjects.length === 0 ? (
-                             <tr><td colSpan={activeTab === 'For Approval' ? 6 : 5} className="p-8 text-center text-gray-400 italic">No subjects found.</td></tr>
+                             <tr><td colSpan={6} className="p-8 text-center text-gray-400 italic">No subjects found.</td></tr>
                         ) : (
                             filteredSubjects.map(sub => (
                                 <tr key={sub.id} className="hover:bg-gray-50">
@@ -334,26 +331,28 @@ const AdminSubjects = () => {
                                             <span className="text-gray-400 text-xs">No File</span>
                                         )}
                                     </td>
-                                    
-                                    {/* ACTION BUTTONS (Only for For Approval) */}
-                                    {activeTab === 'For Approval' && (
-                                        <td className="p-4 text-center space-x-2 flex justify-center">
-                                            <button 
-                                                onClick={() => handleApprove(sub.id)}
-                                                className="bg-green-100 text-green-700 p-2 rounded hover:bg-green-200 transition-colors" 
-                                                title="Approve"
-                                            >
-                                                <CheckCircle size={16} />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDecline(sub.id)}
-                                                className="bg-red-100 text-red-700 p-2 rounded hover:bg-red-200 transition-colors" 
-                                                title="Decline"
-                                            >
-                                                <XCircle size={16} />
-                                            </button>
-                                        </td>
-                                    )}
+                                    <td className="p-4 text-center flex justify-center">
+                                        {sub.status === 'For Approval' ? (
+                                            <div className="space-x-2">
+                                                <button 
+                                                    onClick={() => handleApprove(sub.id)}
+                                                    className="bg-green-100 text-green-700 p-2 rounded hover:bg-green-200 transition-colors" 
+                                                    title="Approve"
+                                                >
+                                                    <CheckCircle size={16} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDecline(sub.id)}
+                                                    className="bg-red-100 text-red-700 p-2 rounded hover:bg-red-200 transition-colors" 
+                                                    title="Decline"
+                                                >
+                                                    <XCircle size={16} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 text-xs">No actions</span>
+                                        )}
+                                    </td>
                                 </tr>
                             ))
                         )}
