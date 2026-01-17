@@ -307,9 +307,8 @@ const SubjectManager = () => {
                             accept="application/pdf"
                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                             onChange={(e) => setFormData({...formData, syllabusFile: e.target.files[0]})}
-                            required
                         />
-                        <p className="text-[10px] text-gray-400 mt-1">Required for approval. PDF files only.</p>
+                        <p className="text-[10px] text-gray-400 mt-1">Optional for now. If uploaded, PDF files only.</p>
                     </div>
 
                     {/* --- CONDITIONAL: STANDARD SUBJECTS (UNITS) --- */}

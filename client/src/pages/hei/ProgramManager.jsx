@@ -232,9 +232,8 @@ const ProgramManager = () => {
                             accept="application/pdf"
                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
                             onChange={(e) => setCurriculumFile(e.target.files[0])}
-                            required
                         />
-                        <p className="text-[10px] text-gray-400 mt-1">This curriculum will be subject to approval. PDF files only.</p>
+                        <p className="text-[10px] text-gray-400 mt-1">Optional for now. If provided, curriculum will be subject to approval (PDF only).</p>
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
