@@ -556,7 +556,7 @@ const updateProgramRequestStatus = async (req, res) => {
       return res.status(404).json({ error: 'Program request not found' });
     }
 
-    if (region) {
+    if (region && region !== 'ALL') {
       const { data: heiRow, error: heiError } = await supabase
         .from('heis')
         .select('id, region_destination')
