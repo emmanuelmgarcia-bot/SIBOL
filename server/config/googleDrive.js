@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const { Readable } = require('stream');
 
 const getAuth = () => {
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
@@ -36,7 +37,7 @@ const uploadBase64File = async ({ fileName, mimeType, dataBase64, folderId, driv
   };
   const media = {
     mimeType,
-    body: Buffer.from(dataBase64, 'base64')
+    body: Readable.from(Buffer.from(dataBase64, 'base64'))
   };
   const response = await drive.files.create({
     requestBody: fileMetadata,
