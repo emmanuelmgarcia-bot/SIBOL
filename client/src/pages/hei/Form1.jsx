@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Form1 = () => {
   const [rowsA, setRowsA] = useState([]);
@@ -9,10 +9,54 @@ const Form1 = () => {
   // Inputs for Section B (Elective)
   const [inputB, setInputB] = useState({ subject: '', program: '', faculty: '' });
 
-  // --- MOCK DATA ---
-  const subjects = ["GEC 101 - Understanding the Self", "IT 101 - Intro to Computing", "PE 101 - Movement", "IP 101 - Indigenous Cultures"];
-  const programs = ["BS Info Tech", "BS Civil Eng", "BS Nursing", "AB Pol Sci"];
-  const faculties = ["Dr. Maria Santos", "Mr. John Doe", "Ms. Jane Smith"];
+  const [integratedSubjects, setIntegratedSubjects] = useState([]);
+  const [electiveSubjects, setElectiveSubjects] = useState([]);
+  const [programOptions, setProgramOptions] = useState([]);
+  const [facultyOptions, setFacultyOptions] = useState([]);
+
+  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+
+  const getHeiInfo = () => {
+    const userRaw = localStorage.getItem('sibol_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    return {
+      heiId: user?.hei_id
+    };
+  };
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      const { heiId } = getHeiInfo();
+      if (!heiId) return;
+
+      try {
+        const subjectsRes = await fetch(`${apiBase}/api/heis/subjects?heiId=${encodeURIComponent(heiId)}&status=Approved`);
+        const subjectsData = await subjectsRes.json();
+        if (subjectsRes.ok && Array.isArray(subjectsData)) {
+          const integrated = subjectsData.filter(s => s.type === 'Integrated');
+          const elective = subjectsData.filter(s => s.type === 'Elective');
+          setIntegratedSubjects(integrated.map(s => `${s.code} - ${s.title}`));
+          setElectiveSubjects(elective.map(s => `${s.code} - ${s.title}`));
+        }
+
+        const programsRes = await fetch(`${apiBase}/api/heis/programs/master`);
+        const programsData = await programsRes.json();
+        if (programsRes.ok && Array.isArray(programsData)) {
+          setProgramOptions(programsData.map(p => `${p.code} - ${p.title}`));
+        }
+
+        const facultyRes = await fetch(`${apiBase}/api/heis/faculty?heiId=${encodeURIComponent(heiId)}`);
+        const facultyData = await facultyRes.json();
+        if (facultyRes.ok && Array.isArray(facultyData)) {
+          setFacultyOptions(facultyData.map(f => f.name));
+        }
+      } catch (err) {
+        console.error('Error loading form 1 options:', err);
+      }
+    };
+
+    loadOptions();
+  }, []);
 
   const addRowA = () => {
     if (!inputA.subject || !inputA.faculty || !inputA.program) return;
@@ -97,21 +141,21 @@ const Form1 = () => {
             <label className="text-xs font-bold text-blue-800 uppercase mb-1 block">Subject</label>
             <select className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-blue-500" value={inputA.subject} onChange={e => setInputA({...inputA, subject: e.target.value})}>
               <option value="">Select Subject...</option>
-              {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+              {integratedSubjects.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="flex-1 min-w-[200px]">
             <label className="text-xs font-bold text-blue-800 uppercase mb-1 block">Degree Program</label>
             <select className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-blue-500" value={inputA.program} onChange={e => setInputA({...inputA, program: e.target.value})}>
               <option value="">Select Program...</option>
-              {programs.map(p => <option key={p} value={p}>{p}</option>)}
+              {programOptions.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div className="flex-1 min-w-[200px]">
              <label className="text-xs font-bold text-blue-800 uppercase mb-1 block">Faculty Handling</label>
              <select className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-blue-500" value={inputA.faculty} onChange={e => setInputA({...inputA, faculty: e.target.value})}>
               <option value="">Select Faculty...</option>
-              {faculties.map(f => <option key={f} value={f}>{f}</option>)}
+              {facultyOptions.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
           </div>
           <button onClick={addRowA} className="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 font-bold h-[38px]">ADD</button>
@@ -160,21 +204,21 @@ const Form1 = () => {
             <label className="text-xs font-bold text-green-800 uppercase mb-1 block">Subject</label>
             <select className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-green-500" value={inputB.subject} onChange={e => setInputB({...inputB, subject: e.target.value})}>
               <option value="">Select Subject...</option>
-              {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+              {electiveSubjects.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="flex-1 min-w-[200px]">
             <label className="text-xs font-bold text-green-800 uppercase mb-1 block">Degree Program</label>
             <select className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-green-500" value={inputB.program} onChange={e => setInputB({...inputB, program: e.target.value})}>
               <option value="">Select Program...</option>
-              {programs.map(p => <option key={p} value={p}>{p}</option>)}
+              {programOptions.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div className="flex-1 min-w-[200px]">
              <label className="text-xs font-bold text-green-800 uppercase mb-1 block">Faculty Handling</label>
              <select className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-green-500" value={inputB.faculty} onChange={e => setInputB({...inputB, faculty: e.target.value})}>
               <option value="">Select Faculty...</option>
-              {faculties.map(f => <option key={f} value={f}>{f}</option>)}
+              {facultyOptions.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
           </div>
           <button onClick={addRowB} className="bg-green-600 text-white px-6 py-2 rounded shadow hover:bg-green-700 font-bold h-[38px]">ADD</button>
