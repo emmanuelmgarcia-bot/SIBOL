@@ -482,48 +482,30 @@ const listProgramRequests = async (req, res) => {
       }
     }
 
-    if (!region && !cleanedHeiId) {
-      return res.status(400).json({ error: 'Region or heiId is required' });
-    }
+    let query = supabase
+      .from('program_requests')
+      .select('id, hei_id, campus, program_code, program_title, status, file_name, web_view_link, web_content_link, created_at');
 
-    let heiIds = [];
-
-    if (region) {
-      let heiQuery = supabase
+    if (cleanedHeiId !== null) {
+      query = query.eq('hei_id', cleanedHeiId);
+    } else if (region) {
+      const { data: heisData, error: heisError } = await supabase
         .from('heis')
         .select('id, region_destination')
         .eq('region_destination', region);
-
-      if (cleanedHeiId !== null) {
-        heiQuery = heiQuery.eq('id', cleanedHeiId);
-      }
-
-      const { data: heisData, error: heisError } = await heiQuery;
 
       if (heisError) {
         console.error('Supabase heis for program requests error:', heisError.message);
         return res.status(500).json({ error: 'Failed to load HEIs for program requests: ' + heisError.message });
       }
 
-      heiIds = (heisData || []).map(h => h.id);
-
+      const heiIds = (heisData || []).map(h => h.id);
       if (heiIds.length === 0) {
         return res.status(200).json([]);
       }
-    } else if (cleanedHeiId !== null) {
-      heiIds = [cleanedHeiId];
-    }
-
-    let query = supabase
-      .from('program_requests')
-      .select('id, hei_id, campus, program_code, program_title, status, file_name, web_view_link, web_content_link, created_at');
-
-    if (heiIds.length > 0) {
       query = query.in('hei_id', heiIds);
-    }
-
-    if (campus) {
-      query = query.eq('campus', campus);
+    } else {
+      return res.status(400).json({ error: 'Region or heiId is required' });
     }
 
     if (status) {
