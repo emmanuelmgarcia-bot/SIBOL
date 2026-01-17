@@ -1015,46 +1015,49 @@ const getSubjects = async (req, res) => {
   try {
     const { heiId, campus, region, status } = req.query;
 
-    let heiIds = [];
-
-    // If region is provided (Admin view), find HEIs in that region
-    if (region) {
-        const { data: heisData, error: heisError } = await supabase
-            .from('heis')
-            .select('id')
-            .eq('region_destination', region);
-        
-        if (heisError) throw heisError;
-        heiIds = heisData.map(h => h.id);
-        
-        // If specific HEI selected within region
-        if (heiId) {
-            if (!heiIds.includes(parseInt(heiId)) && !heiIds.includes(heiId)) {
-                return res.status(200).json([]); // HEI not in region
-            }
-            heiIds = [heiId];
-        }
-    } else if (heiId) {
-        heiIds = [heiId];
-    } else {
-        return res.status(400).json({ error: 'Region or HEI ID required' });
+    let cleanedHeiId = null;
+    if (heiId && heiId !== 'undefined') {
+      const parsed = parseInt(heiId, 10);
+      if (!Number.isNaN(parsed)) {
+        cleanedHeiId = parsed;
+      }
     }
-
-    if (heiIds.length === 0) return res.status(200).json([]);
 
     let query = supabase
       .from('subjects')
-      .select('*')
-      .in('hei_id', heiIds)
-      .order('created_at', { ascending: false });
+      .select('*');
+
+    if (cleanedHeiId !== null) {
+      query = query.eq('hei_id', cleanedHeiId);
+    } else if (region && region !== 'ALL') {
+      const { data: heisData, error: heisError } = await supabase
+        .from('heis')
+        .select('id')
+        .eq('region_destination', region);
+
+      if (heisError) {
+        console.error('Supabase heis for subjects error:', heisError.message);
+        return res.status(500).json({ error: 'Failed to load HEIs for subjects: ' + heisError.message });
+      }
+
+      const heiIds = (heisData || []).map(h => h.id);
+      if (heiIds.length === 0) {
+        return res.status(200).json([]);
+      }
+      query = query.in('hei_id', heiIds);
+    } else {
+      return res.status(400).json({ error: 'Region or heiId is required' });
+    }
 
     if (campus) {
       query = query.eq('campus', campus);
     }
-    
+
     if (status && status !== 'All') {
-        query = query.eq('status', status);
+      query = query.eq('status', status);
     }
+
+    query = query.order('created_at', { ascending: false });
 
     const { data, error } = await query;
 
