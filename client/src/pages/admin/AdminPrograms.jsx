@@ -120,6 +120,7 @@ const AdminPrograms = () => {
         }
         if (Array.isArray(data)) {
           const list = data.map(item => ({
+            id: item.id,
             hei: item.hei,
             campuses: Array.isArray(item.campuses) ? [...item.campuses].sort() : []
           }));
@@ -176,7 +177,9 @@ const AdminPrograms = () => {
 
     const params = new URLSearchParams();
     params.append('region', region);
-    params.append('heiId', selectedHei.heiId);
+    if (selectedHei.id) {
+      params.append('heiId', String(selectedHei.id));
+    }
     params.append('campus', selectedCampus);
     if (activeTab !== 'All') {
       params.append('status', activeTab);

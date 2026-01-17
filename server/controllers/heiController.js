@@ -474,7 +474,15 @@ const listProgramRequests = async (req, res) => {
   try {
     const { region, heiId, campus, status } = req.query;
 
-    if (!region && !heiId) {
+    let cleanedHeiId = null;
+    if (heiId && heiId !== 'undefined') {
+      const parsed = parseInt(heiId, 10);
+      if (!Number.isNaN(parsed)) {
+        cleanedHeiId = parsed;
+      }
+    }
+
+    if (!region && !cleanedHeiId) {
       return res.status(400).json({ error: 'Region or heiId is required' });
     }
 
@@ -486,8 +494,8 @@ const listProgramRequests = async (req, res) => {
         .select('id, region_destination')
         .eq('region_destination', region);
 
-      if (heiId) {
-        heiQuery = heiQuery.eq('id', heiId);
+      if (cleanedHeiId !== null) {
+        heiQuery = heiQuery.eq('id', cleanedHeiId);
       }
 
       const { data: heisData, error: heisError } = await heiQuery;
@@ -502,8 +510,8 @@ const listProgramRequests = async (req, res) => {
       if (heiIds.length === 0) {
         return res.status(200).json([]);
       }
-    } else if (heiId) {
-      heiIds = [heiId];
+    } else if (cleanedHeiId !== null) {
+      heiIds = [cleanedHeiId];
     }
 
     let query = supabase
