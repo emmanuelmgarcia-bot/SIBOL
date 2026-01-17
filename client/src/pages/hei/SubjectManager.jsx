@@ -160,7 +160,12 @@ const SubjectManager = () => {
   };
 
   // Filter Logic
-  const filteredSubjects = subjects.filter(sub => activeTab === 'All' ? true : sub.status === activeTab);
+  const filteredSubjects = subjects.filter(sub => {
+    if (activeTab === 'All') {
+      return sub.status === 'Approved' || sub.status === 'For Approval';
+    }
+    return sub.status === activeTab;
+  });
 
   // Helper Check
   const isIPDegreeProgram = formData.type === 'Degree Program';
@@ -176,7 +181,7 @@ const SubjectManager = () => {
         
         <div className="flex items-center gap-3">
             <div className="bg-gray-100 p-1 rounded-lg flex text-sm font-medium">
-                {['All', 'Approved', 'For Approval', 'Declined'].map((tab) => (
+                {['All', 'Approved', 'For Approval'].map((tab) => (
                     <button key={tab} onClick={() => setActiveTab(tab)}
                         className={`px-3 py-1.5 rounded-md transition-all ${activeTab === tab ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                         {tab}
