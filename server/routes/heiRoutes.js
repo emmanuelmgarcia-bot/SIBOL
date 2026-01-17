@@ -19,7 +19,9 @@ const {
   getSubjects,
   updateSubjectStatus,
   deleteSubject,
-  downloadSubmissionPdf
+  downloadSubmissionPdf,
+  downloadSubjectSyllabus,
+  downloadProgramRequestFile
 } = require('../controllers/heiController');
 
 const router = express.Router();
@@ -35,6 +37,7 @@ router.delete('/programs/master/:id', deleteMasterProgram);
 
 router.post('/programs/requests', createProgramRequest);
 router.get('/programs/requests', listProgramRequests);
+router.get('/programs/requests/:id/file', downloadProgramRequestFile);
 router.post('/programs/requests/:id/status', updateProgramRequestStatus);
 router.put('/programs/requests/:id', updateProgramRequest);
 router.delete('/programs/requests/:id', deleteProgramRequest);
@@ -46,6 +49,7 @@ router.delete('/faculty/:id', deleteFaculty);
 
 router.get('/subjects', getSubjects);
 router.post('/subjects', createSubject);
+router.get('/subjects/:id/syllabus', downloadSubjectSyllabus);
 router.post('/subjects/:id/status', updateSubjectStatus);
 router.delete('/subjects/:id', deleteSubject);
 

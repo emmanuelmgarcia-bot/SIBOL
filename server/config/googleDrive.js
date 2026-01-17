@@ -19,6 +19,14 @@ const getDriveClient = () => {
   return google.drive({ version: 'v3', auth });
 };
 
+const getFileStream = async (fileId) => {
+  const drive = getDriveClient();
+  return await drive.files.get(
+    { fileId, alt: 'media' },
+    { responseType: 'stream' }
+  );
+};
+
 const uploadBase64File = async ({ fileName, mimeType, dataBase64, folderId, driveMimeType }) => {
   const drive = getDriveClient();
   const fileMetadata = {
@@ -52,5 +60,6 @@ const exportFileAsPdf = async (fileId) => {
 
 module.exports = {
   uploadBase64File,
-  exportFileAsPdf
+  exportFileAsPdf,
+  getFileStream
 };

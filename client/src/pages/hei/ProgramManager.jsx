@@ -77,6 +77,12 @@ const ProgramManager = () => {
           programTitle: programDetails.title
         };
 
+        if (!curriculumFile) {
+            alert('Please upload a curriculum PDF file.');
+            setSaving(false);
+            return;
+        }
+
         if (curriculumFile) {
           const isPdf =
             (curriculumFile.type && curriculumFile.type.toLowerCase().includes('pdf')) ||
@@ -84,6 +90,7 @@ const ProgramManager = () => {
 
           if (!isPdf) {
             alert('Please upload a PDF file for the curriculum.');
+            setSaving(false);
             return;
           }
 
@@ -294,7 +301,7 @@ const ProgramManager = () => {
                                     <button
                                       type="button"
                                       onClick={() => {
-                                          window.open(prog.web_view_link || prog.web_content_link, '_blank', 'noopener,noreferrer');
+                                          window.open(`${apiBase}/api/heis/programs/requests/${prog.id}/file`, '_blank', 'noopener,noreferrer');
                                       }}
                                       className="text-indigo-600 hover:text-indigo-800 text-xs font-bold border border-indigo-200 bg-indigo-50 px-3 py-1 rounded"
                                     >
@@ -362,14 +369,15 @@ const ProgramManager = () => {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Upload Curriculum / Prospectus (PDF only)</label>
+                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Upload Curriculum / Prospectus (PDF only) <span className="text-red-500">*</span></label>
                         <input 
                             type="file" 
                             accept="application/pdf"
                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
                             onChange={(e) => setCurriculumFile(e.target.files[0])}
+                            required
                         />
-                        <p className="text-[10px] text-gray-400 mt-1">Optional for now. If provided, curriculum will be subject to approval (PDF only).</p>
+                        <p className="text-[10px] text-gray-400 mt-1">Required. Curriculum will be subject to approval (PDF only).</p>
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">

@@ -102,6 +102,12 @@ const SubjectManager = () => {
           studentsAy3: formData.studentsAy3
         };
 
+        if (!formData.syllabusFile) {
+          alert('Please upload a syllabus PDF file.');
+          setSaving(false);
+          return;
+        }
+
         if (formData.syllabusFile) {
           const file = formData.syllabusFile;
           const isPdf =
@@ -110,6 +116,7 @@ const SubjectManager = () => {
 
           if (!isPdf) {
             alert('Please upload a PDF file for the syllabus.');
+            setSaving(false);
             return;
           }
 
@@ -239,7 +246,7 @@ const SubjectManager = () => {
                                     <button
                                       type="button"
                                       onClick={() => {
-                                          window.open(sub.syllabus_view_link, '_blank', 'noopener,noreferrer');
+                                          window.open(`${apiBase}/api/heis/subjects/${sub.id}/syllabus`, '_blank', 'noopener,noreferrer');
                                       }}
                                       className="text-blue-600 hover:text-blue-800 text-xs font-bold border border-blue-200 bg-blue-50 px-3 py-1 rounded"
                                     >
@@ -299,14 +306,15 @@ const SubjectManager = () => {
 
                     {/* ALWAYS ASK FOR SYLLABUS */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Upload Syllabus (PDF only)</label>
+                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Upload Syllabus (PDF only) <span className="text-red-500">*</span></label>
                         <input
                             type="file"
                             accept="application/pdf"
                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                             onChange={(e) => setFormData({...formData, syllabusFile: e.target.files[0]})}
+                            required
                         />
-                        <p className="text-[10px] text-gray-400 mt-1">Optional for now. If uploaded, PDF files only.</p>
+                        <p className="text-[10px] text-gray-400 mt-1">Required. PDF files only.</p>
                     </div>
 
                     {/* --- CONDITIONAL: STANDARD SUBJECTS (UNITS) --- */}

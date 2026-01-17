@@ -1,5 +1,5 @@
 const supabase = require('../config/supabase');
-const { uploadBase64File, exportFileAsPdf } = require('../config/googleDrive');
+const { uploadBase64File, exportFileAsPdf, getFileStream } = require('../config/googleDrive');
 const ExcelJS = require('exceljs');
 const path = require('path');
 
@@ -405,8 +405,8 @@ const createProgramRequest = async (req, res) => {
       fileBase64
     } = req.body;
 
-    if (!heiId || !programCode || !programTitle) {
-      return res.status(400).json({ error: 'Missing required fields for program request' });
+    if (!heiId || !programCode || !programTitle || !fileName || !fileBase64) {
+      return res.status(400).json({ error: 'Missing required fields for program request (including file)' });
     }
 
     const { data: heiRow, error: heiError } = await supabase
@@ -928,8 +928,8 @@ const createSubject = async (req, res) => {
       fileBase64
     } = req.body;
 
-    if (!heiId || !type || !code || !title) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!heiId || !type || !code || !title || !fileName || !fileBase64) {
+      return res.status(400).json({ error: 'Missing required fields (including syllabus file)' });
     }
 
     const { data: heiRow, error: heiError } = await supabase
@@ -1123,6 +1123,93 @@ const deleteSubject = async (req, res) => {
   }
 };
 
+const downloadSubjectSyllabus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Subject id is required' });
+    }
+
+    const { data, error } = await supabase
+      .from('subjects')
+      .select('id, syllabus_file_id, syllabus_file_name')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Supabase subject fetch error:', error.message);
+      return res.status(500).json({ error: 'Failed to load subject: ' + error.message });
+    }
+
+    if (!data || !data.syllabus_file_id) {
+      return res.status(404).json({ error: 'Syllabus not found' });
+    }
+
+    let fileStream;
+    try {
+      const response = await getFileStream(data.syllabus_file_id);
+      fileStream = response.data;
+    } catch (driveErr) {
+      console.error('Drive get stream error:', driveErr.message);
+      return res.status(500).json({ error: 'Failed to retrieve file from Drive' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    // Inline means view in browser, Attachment means download
+    // User wants "viewing", so inline is appropriate.
+    // If they want to download, they can save from the viewer.
+    res.setHeader('Content-Disposition', `inline; filename="${data.syllabus_file_name || 'syllabus.pdf'}"`);
+    
+    fileStream.pipe(res);
+  } catch (err) {
+    console.error('Download subject syllabus exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const downloadProgramRequestFile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Program request id is required' });
+    }
+
+    const { data, error } = await supabase
+      .from('program_requests')
+      .select('id, file_id, file_name')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Supabase program request fetch error:', error.message);
+      return res.status(500).json({ error: 'Failed to load program request: ' + error.message });
+    }
+
+    if (!data || !data.file_id) {
+      return res.status(404).json({ error: 'Curriculum file not found' });
+    }
+
+    let fileStream;
+    try {
+      const response = await getFileStream(data.file_id);
+      fileStream = response.data;
+    } catch (driveErr) {
+      console.error('Drive get stream error:', driveErr.message);
+      return res.status(500).json({ error: 'Failed to retrieve file from Drive' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${data.file_name || 'curriculum.pdf'}"`);
+    
+    fileStream.pipe(res);
+  } catch (err) {
+    console.error('Download program request file exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
 module.exports = {
   getAllHeis,
   uploadSubmission,
@@ -1143,5 +1230,7 @@ module.exports = {
   getSubjects,
   updateSubjectStatus,
   deleteSubject,
-  downloadSubmissionPdf
+  downloadSubmissionPdf,
+  downloadSubjectSyllabus,
+  downloadProgramRequestFile
 };
