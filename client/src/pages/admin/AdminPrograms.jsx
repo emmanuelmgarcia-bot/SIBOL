@@ -461,12 +461,12 @@ const AdminPrograms = () => {
                                 <th className="p-4">Program Name</th>
                                 <th className="p-4 text-center">Status</th>
                                 <th className="p-4 text-center">Curriculum</th>
-                                {activeTab === 'For Approval' && <th className="p-4 text-center">Action</th>}
+                                <th className="p-4 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filteredPrograms.length === 0 ? (
-                                <tr><td colSpan={activeTab === 'For Approval' ? 5 : 4} className="p-8 text-center text-gray-400 italic">No programs found.</td></tr>
+                                <tr><td colSpan={5} className="p-8 text-center text-gray-400 italic">No programs found.</td></tr>
                             ) : (
                                 filteredPrograms.map(prog => (
                                     <tr key={prog.id} className="hover:bg-gray-50">
@@ -474,7 +474,11 @@ const AdminPrograms = () => {
                                         <td className="p-4 font-medium text-gray-700">{prog.title}</td>
                                         <td className="p-4 text-center">
                                             <span className={`px-2 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1
-                                                ${prog.status === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                                ${prog.status === 'Approved'
+                                                  ? 'bg-green-100 text-green-700'
+                                                  : prog.status === 'Declined'
+                                                    ? 'bg-red-100 text-red-700'
+                                                    : 'bg-orange-100 text-orange-700'}`}>
                                                 {prog.status}
                                             </span>
                                         </td>
@@ -490,17 +494,28 @@ const AdminPrograms = () => {
                                               <span className="text-xs text-gray-400">No file</span>
                                             )}
                                         </td>
-                                        
-                                        {activeTab === 'For Approval' && (
-                                            <td className="p-4 text-center space-x-2 flex justify-center">
-                                                <button onClick={() => handleApprove(prog.id)} className="bg-green-100 text-green-700 p-2 rounded hover:bg-green-200 transition-colors" title="Approve">
-                                                    <CheckCircle size={16} />
-                                                </button>
-                                                <button onClick={() => handleDecline(prog.id)} className="bg-red-100 text-red-700 p-2 rounded hover:bg-red-200 transition-colors" title="Decline">
-                                                    <XCircle size={16} />
-                                                </button>
-                                            </td>
-                                        )}
+                                        <td className="p-4 text-center">
+                                            {prog.status === 'For Approval' ? (
+                                                <div className="flex justify-center space-x-2">
+                                                    <button
+                                                      onClick={() => handleApprove(prog.id)}
+                                                      className="bg-green-100 text-green-700 p-2 rounded hover:bg-green-200 transition-colors"
+                                                      title="Approve"
+                                                    >
+                                                        <CheckCircle size={16} />
+                                                    </button>
+                                                    <button
+                                                      onClick={() => handleDecline(prog.id)}
+                                                      className="bg-red-100 text-red-700 p-2 rounded hover:bg-red-200 transition-colors"
+                                                      title="Decline"
+                                                    >
+                                                        <XCircle size={16} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">No actions</span>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))
                             )}
