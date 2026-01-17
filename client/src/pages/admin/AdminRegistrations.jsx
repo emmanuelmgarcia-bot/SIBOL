@@ -96,7 +96,7 @@ const AdminRegistrations = () => {
               hei: item.hei_name,
               campus: item.campus,
               name: `${item.first_name} ${item.middle_name || ''} ${item.last_name}`.replace(/\s+/g, ' ').trim(),
-              username: item.hei_name,
+              username: item.username || '',
               status,
               region: item.region
             };

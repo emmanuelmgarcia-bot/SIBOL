@@ -6,6 +6,8 @@ const FacultyManager = () => {
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({ id: null, name: '', status: 'Permanent', education: 'Bachelor\'s' });
   const [filter, setFilter] = useState('All');
+  const [heiName, setHeiName] = useState('');
+  const [campusName, setCampusName] = useState('');
 
   const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
 
@@ -39,6 +41,29 @@ const FacultyManager = () => {
 
   useEffect(() => {
     fetchFaculty();
+  }, []);
+
+  useEffect(() => {
+    const loadHei = async () => {
+      const { heiId } = getHeiInfo();
+      if (!heiId) return;
+
+      try {
+        const res = await fetch(`${apiBase}/api/heis`);
+        const data = await res.json();
+        if (res.ok && Array.isArray(data)) {
+          const match = data.find(h => String(h.id) === String(heiId));
+          if (match) {
+            setHeiName(match.name || '');
+            setCampusName(match.campus_name || '');
+          }
+        }
+      } catch (err) {
+        console.error('Error loading HEI for faculty manager:', err);
+      }
+    };
+
+    loadHei();
   }, []);
 
   const handleEdit = (fac) => {
@@ -124,7 +149,12 @@ const FacultyManager = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Isabela State University <span className="text-sm font-normal text-gray-500 block">Cabagan Campus</span></h1>
+        <h1 className="text-2xl font-bold text-gray-800">
+          {heiName || 'My Institution'}
+          <span className="text-sm font-normal text-gray-500 block">
+            {campusName || 'Campus'}
+          </span>
+        </h1>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

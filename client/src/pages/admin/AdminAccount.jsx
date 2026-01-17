@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const passwordIsValid = (value) => {
+  if (!value || value.length < 8) return false;
+  const hasUpper = /[A-Z]/.test(value);
+  const hasLower = /[a-z]/.test(value);
+  const hasNumber = /[0-9]/.test(value);
+  return hasUpper && hasLower && hasNumber;
+};
+
 const AdminAccount = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -51,6 +59,11 @@ const AdminAccount = () => {
 
     if (formData.newPassword !== formData.confirmPassword) {
       alert('New password and confirmation do not match.');
+      return;
+    }
+
+    if (!passwordIsValid(formData.newPassword)) {
+      alert('New password must be at least 8 characters and include uppercase, lowercase, and numeric characters.');
       return;
     }
 
@@ -181,4 +194,3 @@ const AdminAccount = () => {
 };
 
 export default AdminAccount;
-

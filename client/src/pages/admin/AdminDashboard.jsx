@@ -10,6 +10,15 @@ const AdminDashboard = () => {
   const [selectedCampus, setSelectedCampus] = useState('');
   const [showHeiList, setShowHeiList] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [stats, setStats] = useState({
+    subjects: 0,
+    programs: 0,
+    totalFaculty: 0,
+    facultyWithSubjects: 0,
+    subjectsInProgram: 0,
+    ipPrograms: 0
+  });
   
   const wrapperRef = useRef(null);
 
@@ -34,6 +43,7 @@ const AdminDashboard = () => {
         }
         if (Array.isArray(data)) {
           const parsedList = data.map(item => ({
+            heiId: item.heiId || item.id || null,
             hei: item.hei,
             campuses: Array.isArray(item.campuses) ? [...item.campuses].sort() : []
           }));
@@ -73,6 +83,82 @@ const AdminDashboard = () => {
   const filteredHeis = heiList.filter(item => 
     item.hei.toLowerCase().includes(heiSearch.toLowerCase())
   );
+
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!selectedHei || !selectedCampus) {
+        setStats({
+          subjects: 0,
+          programs: 0,
+          totalFaculty: 0,
+          facultyWithSubjects: 0,
+          subjectsInProgram: 0,
+          ipPrograms: 0
+        });
+        return;
+      }
+
+      try {
+        setStatsLoading(true);
+        const apiBase =
+          window.location.hostname === 'localhost'
+            ? 'http://localhost:5000'
+            : '';
+
+        const heiId = selectedHei.heiId;
+
+        const [subjectsRes, facultyRes, programsRes] = await Promise.all([
+          fetch(
+            `${apiBase}/api/heis/subjects?heiId=${encodeURIComponent(
+              heiId
+            )}&campus=${encodeURIComponent(selectedCampus)}`
+          ),
+          fetch(
+            `${apiBase}/api/heis/faculty?heiId=${encodeURIComponent(
+              heiId
+            )}&campus=${encodeURIComponent(selectedCampus)}`
+          ),
+          fetch(
+            `${apiBase}/api/heis/programs/requests?heiId=${encodeURIComponent(
+              heiId
+            )}&campus=${encodeURIComponent(selectedCampus)}`
+          )
+        ]);
+
+        const [subjectsData, facultyData, programsData] = await Promise.all([
+          subjectsRes.json(),
+          facultyRes.json(),
+          programsRes.json()
+        ]);
+
+        const subjects = Array.isArray(subjectsData) ? subjectsData : [];
+        const faculty = Array.isArray(facultyData) ? facultyData : [];
+        const programs = Array.isArray(programsData) ? programsData : [];
+
+        const totalSubjects = subjects.length;
+        const ipPrograms = subjects.filter(s => s.type === 'Degree Program').length;
+        const subjectsInProgram = subjects.filter(
+          s => s.type !== 'Degree Program'
+        ).length;
+        const totalFaculty = faculty.length;
+
+        setStats({
+          subjects: totalSubjects,
+          programs: programs.length,
+          totalFaculty,
+          facultyWithSubjects: totalFaculty,
+          subjectsInProgram,
+          ipPrograms
+        });
+      } catch (err) {
+        console.error('Error loading admin dashboard stats:', err);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [selectedHei, selectedCampus]);
 
   return (
     <div className="space-y-6">
@@ -166,12 +252,36 @@ const AdminDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <StatCard label="Number of Subjects" value="0" color="blue" />
-            <StatCard label="Degree Programs" value="0" color="indigo" />
-            <StatCard label="Total Faculty" value="0" color="green" />
-            <StatCard label="Faculty w/ Subjects" value="0" color="emerald" />
-            <StatCard label="Subjects in Program" value="0" color="orange" />
-            <StatCard label="IP Education Programs" value="0" color="purple" />
+            <StatCard
+              label="Number of Subjects"
+              value={statsLoading ? '...' : stats.subjects}
+              color="blue"
+            />
+            <StatCard
+              label="Degree Programs"
+              value={statsLoading ? '...' : stats.programs}
+              color="indigo"
+            />
+            <StatCard
+              label="Total Faculty"
+              value={statsLoading ? '...' : stats.totalFaculty}
+              color="green"
+            />
+            <StatCard
+              label="Faculty w/ Subjects"
+              value={statsLoading ? '...' : stats.facultyWithSubjects}
+              color="emerald"
+            />
+            <StatCard
+              label="Subjects in Program"
+              value={statsLoading ? '...' : stats.subjectsInProgram}
+              color="orange"
+            />
+            <StatCard
+              label="IP Education Programs"
+              value={statsLoading ? '...' : stats.ipPrograms}
+              color="purple"
+            />
           </div>
         </div>
       )}

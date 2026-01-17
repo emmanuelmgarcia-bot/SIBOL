@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -13,6 +13,8 @@ import {
 const AdminLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [displayName, setDisplayName] = useState('');
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   // Helper to check active route
   const isActive = (path) => location.pathname === path;
@@ -31,7 +33,20 @@ const AdminLayout = ({ children }) => {
     }
     try {
       const parsed = JSON.parse(stored);
+      const isSuperAdmin =
+        parsed.username === 'superched' || parsed.role === 'superadmin';
+      if (isSuperAdmin) {
+        setDisplayName('superuser');
+      } else if (parsed.assigned_region) {
+        setDisplayName(`${parsed.assigned_region} Office`);
+      } else {
+        const fallback = parsed.username || parsed.email || '';
+        if (fallback) {
+          setDisplayName(fallback);
+        }
+      }
       const mustChange = !!parsed.must_change_password;
+      setMustChangePassword(mustChange);
       if (mustChange && location.pathname !== '/admin/account') {
         navigate('/admin/account');
       }
@@ -57,35 +72,41 @@ const AdminLayout = ({ children }) => {
           </div>
           <div className="overflow-hidden">
             <p className="text-xs text-blue-200 truncate">Admin Portal</p>
-            <h1 className="font-bold text-sm truncate">Region 2 Office</h1>
+            <h1 className="font-bold text-sm truncate">
+              {displayName || 'CHED Admin'}
+            </h1>
           </div>
         </div>
 
         {/* NAVIGATION */}
         <nav className="flex-1 py-4 overflow-y-auto">
           
-          <Link to="/admin/dashboard" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/dashboard') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
-            <LayoutDashboard size={18} /> Dashboard
-          </Link>
+          {!mustChangePassword && (
+            <>
+              <Link to="/admin/dashboard" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/dashboard') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+                <LayoutDashboard size={18} /> Dashboard
+              </Link>
 
-          <Link to="/admin/subjects" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/subjects') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
-            <BookOpen size={18} /> Subjects
-          </Link>
+              <Link to="/admin/subjects" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/subjects') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+                <BookOpen size={18} /> Subjects
+              </Link>
 
-          <Link to="/admin/programs" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/programs') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
-            <GraduationCap size={18} /> Programs
-          </Link>
+              <Link to="/admin/programs" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/programs') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+                <GraduationCap size={18} /> Programs
+              </Link>
 
-          <Link to="/admin/submissions" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/submissions') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
-            <FileText size={18} /> Submissions
-          </Link>
+              <Link to="/admin/submissions" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/submissions') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+                <FileText size={18} /> Submissions
+              </Link>
+
+              <Link to="/admin/registrations" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/registrations') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
+                <Users size={18} /> Registrations
+              </Link>
+            </>
+          )}
 
           <Link to="/admin/account" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/account') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
             <User size={18} /> Account
-          </Link>
-
-          <Link to="/admin/registrations" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/registrations') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
-            <Users size={18} /> Registrations
           </Link>
 
         </nav>

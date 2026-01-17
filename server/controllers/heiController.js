@@ -73,6 +73,39 @@ const uploadSubmission = async (req, res) => {
         return res.status(500).json({ error: 'Excel template is missing worksheet' });
       }
 
+      sheet.pageSetup.orientation = 'landscape';
+
+      let heiMeta = null;
+      try {
+        const { data: heiData, error: heiError } = await supabase
+          .from('heis')
+          .select('name, address, region_destination')
+          .eq('id', heiId)
+          .single();
+
+        if (!heiError && heiData) {
+          heiMeta = heiData;
+        }
+      } catch (metaErr) {
+        console.error('Supabase HEI metadata error:', metaErr.message);
+      }
+
+      if (heiMeta) {
+        const nameValue = `Name of HEI: ${heiMeta.name || ''}`;
+        const regionValue = `Region: ${heiMeta.region_destination || ''}`;
+        const addressValue = `Address: ${heiMeta.address || ''}`;
+
+        const headerRow5 = sheet.getRow(5);
+        const headerRow6 = sheet.getRow(6);
+
+        headerRow5.getCell('A').value = nameValue;
+        headerRow5.getCell('K').value = regionValue;
+        headerRow6.getCell('A').value = addressValue;
+
+        headerRow5.commit();
+        headerRow6.commit();
+      }
+
       if (formType === 'form1') {
         const integrated = Array.isArray(payload.integrated) ? payload.integrated : [];
         const elective = Array.isArray(payload.elective) ? payload.elective : [];
@@ -80,35 +113,35 @@ const uploadSubmission = async (req, res) => {
         const startRowIntegrated = 12;
         integrated.forEach((row, index) => {
           const excelRow = sheet.getRow(startRowIntegrated + index);
-          excelRow.getCell('B').value = row.subject || '';
-          excelRow.getCell('C').value = row.units || '';
-          excelRow.getCell('D').value = row.program || '';
-          excelRow.getCell('F').value = row.faculty || '';
-          excelRow.getCell('H').value = row.status || '';
+          excelRow.getCell('A').value = row.subject || '';
+          excelRow.getCell('D').value = row.units || '';
+          excelRow.getCell('E').value = row.program || '';
+          excelRow.getCell('H').value = row.faculty || '';
+          excelRow.getCell('J').value = row.status || '';
           if (row.education === 'Bachelors') {
-            excelRow.getCell('J').value = '✔';
-          } else if (row.education === 'Masters') {
             excelRow.getCell('K').value = '✔';
-          } else if (row.education === 'Doctoral') {
+          } else if (row.education === 'Masters') {
             excelRow.getCell('L').value = '✔';
+          } else if (row.education === 'Doctoral') {
+            excelRow.getCell('M').value = '✔';
           }
           excelRow.commit();
         });
 
-        const startRowElective = 23;
+        const startRowElective = 24;
         elective.forEach((row, index) => {
           const excelRow = sheet.getRow(startRowElective + index);
-          excelRow.getCell('B').value = row.subject || '';
-          excelRow.getCell('C').value = row.units || '';
-          excelRow.getCell('D').value = row.program || '';
-          excelRow.getCell('F').value = row.faculty || '';
-          excelRow.getCell('H').value = row.status || '';
+          excelRow.getCell('A').value = row.subject || '';
+          excelRow.getCell('D').value = row.units || '';
+          excelRow.getCell('E').value = row.program || '';
+          excelRow.getCell('H').value = row.faculty || '';
+          excelRow.getCell('J').value = row.status || '';
           if (row.education === 'Bachelors') {
-            excelRow.getCell('J').value = '✔';
-          } else if (row.education === 'Masters') {
             excelRow.getCell('K').value = '✔';
-          } else if (row.education === 'Doctoral') {
+          } else if (row.education === 'Masters') {
             excelRow.getCell('L').value = '✔';
+          } else if (row.education === 'Doctoral') {
+            excelRow.getCell('M').value = '✔';
           }
           excelRow.commit();
         });
@@ -120,56 +153,64 @@ const uploadSubmission = async (req, res) => {
         const startRowIntegrated = 12;
         integrated.forEach((row, index) => {
           const excelRow = sheet.getRow(startRowIntegrated + index);
-          excelRow.getCell('B').value = row.subject || '';
-          excelRow.getCell('C').value = row.units || '';
-          excelRow.getCell('D').value = row.program || '';
-          excelRow.getCell('F').value = row.faculty || '';
-          excelRow.getCell('H').value = row.status || '';
+          excelRow.getCell('A').value = row.subject || '';
+          excelRow.getCell('D').value = row.units || '';
+          excelRow.getCell('E').value = row.program || '';
+          excelRow.getCell('H').value = row.faculty || '';
+          excelRow.getCell('J').value = row.status || '';
           if (row.education === 'Bachelors') {
-            excelRow.getCell('J').value = '✔';
-          } else if (row.education === 'Masters') {
             excelRow.getCell('K').value = '✔';
-          } else if (row.education === 'Doctoral') {
+          } else if (row.education === 'Masters') {
             excelRow.getCell('L').value = '✔';
+          } else if (row.education === 'Doctoral') {
+            excelRow.getCell('M').value = '✔';
           }
           excelRow.commit();
         });
 
-        const startRowElective = 23;
+        const startRowElective = 24;
         elective.forEach((row, index) => {
           const excelRow = sheet.getRow(startRowElective + index);
-          excelRow.getCell('B').value = row.subject || '';
-          excelRow.getCell('C').value = row.units || '';
-          excelRow.getCell('D').value = row.program || '';
-          excelRow.getCell('F').value = row.faculty || '';
-          excelRow.getCell('H').value = row.status || '';
+          excelRow.getCell('A').value = row.subject || '';
+          excelRow.getCell('D').value = row.units || '';
+          excelRow.getCell('E').value = row.program || '';
+          excelRow.getCell('H').value = row.faculty || '';
+          excelRow.getCell('J').value = row.status || '';
           if (row.education === 'Bachelors') {
-            excelRow.getCell('J').value = '✔';
-          } else if (row.education === 'Masters') {
             excelRow.getCell('K').value = '✔';
-          } else if (row.education === 'Doctoral') {
+          } else if (row.education === 'Masters') {
             excelRow.getCell('L').value = '✔';
+          } else if (row.education === 'Doctoral') {
+            excelRow.getCell('M').value = '✔';
           }
           excelRow.commit();
         });
 
-        const startRowPrograms = 34;
+        if (programs.length > 0) {
+          const ayHeaderRow = sheet.getRow(36);
+          ayHeaderRow.getCell('E').value = 'AY 22-23';
+          ayHeaderRow.getCell('F').value = 'AY 23-24';
+          ayHeaderRow.getCell('G').value = 'AY 24-25';
+          ayHeaderRow.commit();
+        }
+
+        const startRowPrograms = 37;
         programs.forEach((row, index) => {
           const excelRow = sheet.getRow(startRowPrograms + index);
-          excelRow.getCell('B').value = row.subject || '';
+          excelRow.getCell('A').value = row.subject || '';
           excelRow.getCell('C').value = row.govtAuthority || row.govt_authority || '';
           excelRow.getCell('D').value = row.ayStarted || row.ay_started || '';
           excelRow.getCell('E').value = row.studentsAy1 || row.students_ay1 || '';
           excelRow.getCell('F').value = row.studentsAy2 || row.students_ay2 || '';
           excelRow.getCell('G').value = row.studentsAy3 || row.students_ay3 || '';
           excelRow.getCell('H').value = row.faculty || '';
-          excelRow.getCell('I').value = row.status || '';
+          excelRow.getCell('J').value = row.status || '';
           if (row.education === 'Bachelors') {
-            excelRow.getCell('J').value = '✔';
-          } else if (row.education === 'Masters') {
             excelRow.getCell('K').value = '✔';
-          } else if (row.education === 'Doctoral') {
+          } else if (row.education === 'Masters') {
             excelRow.getCell('L').value = '✔';
+          } else if (row.education === 'Doctoral') {
+            excelRow.getCell('M').value = '✔';
           }
           excelRow.commit();
         });

@@ -92,7 +92,7 @@ const AdminSubmissions = () => {
       try {
         const url = `${apiBase}/api/heis/submissions?heiId=${encodeURIComponent(
           selectedHei.heiId
-        )}&campus=${encodeURIComponent(selectedCampus)}`;
+        )}`;
         const response = await fetch(url);
         const data = await response.json();
         if (!response.ok) {
