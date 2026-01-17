@@ -20,42 +20,47 @@ const AdminSubjects = () => {
   // --- FETCH SUBJECTS ---
   useEffect(() => {
     if (!selectedHei || !selectedCampus) {
-        setSubjects([]);
-        return;
+      setSubjects([]);
+      return;
     }
 
     const fetchSubjects = async () => {
-        setLoadingSubjects(true);
-        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
-        const userRaw = localStorage.getItem('sibol_user');
-        const user = userRaw ? JSON.parse(userRaw) : null;
-        const region = user?.assigned_region;
+      setLoadingSubjects(true);
+      const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+      const userRaw = localStorage.getItem('sibol_user');
+      const user = userRaw ? JSON.parse(userRaw) : null;
+      const region = user?.assigned_region;
 
-        try {
-            const query = new URLSearchParams({
-                heiId: selectedHei.id,
-                campus: selectedCampus,
-                region: region || ''
-            });
-            const res = await fetch(`${apiBase}/api/heis/subjects?${query.toString()}`);
-            const data = await res.json();
-            
-            if (res.ok) {
-                setSubjects(data);
-            } else {
-                console.error('Failed to fetch subjects:', data.error);
-                setSubjects([]);
-            }
-        } catch (err) {
-            console.error('Error fetching subjects:', err);
-            setSubjects([]);
-        } finally {
-            setLoadingSubjects(false);
+      try {
+        const query = new URLSearchParams();
+        query.append('heiId', String(selectedHei.id));
+        query.append('campus', selectedCampus);
+        if (region) {
+          query.append('region', region);
         }
+        if (activeTab && activeTab !== 'All') {
+          query.append('status', activeTab);
+        }
+
+        const res = await fetch(`${apiBase}/api/heis/subjects?${query.toString()}`);
+        const data = await res.json();
+
+        if (res.ok) {
+          setSubjects(data);
+        } else {
+          console.error('Failed to fetch subjects:', data.error);
+          setSubjects([]);
+        }
+      } catch (err) {
+        console.error('Error fetching subjects:', err);
+        setSubjects([]);
+      } finally {
+        setLoadingSubjects(false);
+      }
     };
 
     fetchSubjects();
-  }, [selectedHei, selectedCampus]);
+  }, [selectedHei, selectedCampus, activeTab]);
 
 
   useEffect(() => {
