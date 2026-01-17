@@ -194,6 +194,7 @@ const AdminPrograms = () => {
         if (Array.isArray(data)) {
           const mapped = data.map(item => ({
             id: item.id,
+            heiId: item.hei_id,
             code: item.program_code,
             title: item.program_title,
             status: item.status,
@@ -239,30 +240,30 @@ const AdminPrograms = () => {
   };
 
   const handleDecline = async (id) => {
-    if (!window.confirm("Decline this program?")) {
+    if (!window.confirm("Decline this program request and delete it?")) {
       return;
     }
-    const userRaw = localStorage.getItem('sibol_user');
-    const user = userRaw ? JSON.parse(userRaw) : null;
-    const region = user && user.assigned_region ? user.assigned_region : null;
-    if (!region) {
-      alert('Missing assigned region. Cannot decline program request.');
+
+    const target = programs.find(p => p.id === id);
+    if (!target || !target.heiId) {
+      alert('Missing HEI information for this program request.');
       return;
     }
+
     try {
-      const res = await fetch(`${apiBase}/api/heis/programs/requests/${encodeURIComponent(id)}/status`, {
-        method: 'POST',
+      const res = await fetch(`${apiBase}/api/heis/programs/requests/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Declined', region })
+        body: JSON.stringify({ heiId: target.heiId })
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to decline program request');
+        throw new Error(data.error || 'Failed to delete program request');
       }
-      setPrograms(programs.map(p => p.id === id ? { ...p, status: 'Declined' } : p));
+      setPrograms(programs.filter(p => p.id !== id));
     } catch (err) {
-      console.error('Decline program request error:', err);
-      alert(err.message || 'Failed to decline program request');
+      console.error('Decline/delete program request error:', err);
+      alert(err.message || 'Failed to delete program request');
     }
   };
 

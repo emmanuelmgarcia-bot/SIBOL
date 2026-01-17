@@ -314,26 +314,22 @@ const ProgramManager = () => {
                                 </span>
                             </td>
                             <td className="p-4 text-center">
-                                {prog.status === 'Approved' ? (
-                                    <span className="text-xs text-gray-400">No changes allowed</span>
-                                ) : (
-                                    <div className="flex justify-center gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => openEditModal(prog)}
-                                            className="text-indigo-600 hover:text-indigo-800 text-xs font-bold uppercase"
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDelete(prog.id)}
-                                            className="text-red-500 hover:text-red-700 text-xs font-bold uppercase"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                )}
+                                <div className="flex justify-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => openEditModal(prog)}
+                                        className="text-indigo-600 hover:text-indigo-800 text-xs font-bold uppercase"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDelete(prog.id)}
+                                        className="text-red-500 hover:text-red-700 text-xs font-bold uppercase"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     ))

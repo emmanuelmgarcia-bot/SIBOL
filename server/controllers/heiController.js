@@ -537,7 +537,7 @@ const updateProgramRequestStatus = async (req, res) => {
       return res.status(400).json({ error: 'Request id and status are required' });
     }
 
-    if (!['Approved', 'For Approval', 'Declined'].includes(status)) {
+    if (!['Approved', 'For Approval'].includes(status)) {
       return res.status(400).json({ error: 'Invalid status value' });
     }
 
@@ -633,10 +633,6 @@ const updateProgramRequest = async (req, res) => {
 
     if (requestRow.hei_id !== parsedHeiId) {
       return res.status(403).json({ error: 'Not allowed to modify program request for another HEI' });
-    }
-
-    if (requestRow.status === 'Approved') {
-      return res.status(400).json({ error: 'Approved program requests cannot be modified' });
     }
 
     const updatePayload = {};
@@ -739,10 +735,6 @@ const deleteProgramRequest = async (req, res) => {
 
     if (requestRow.hei_id !== parsedHeiId) {
       return res.status(403).json({ error: 'Not allowed to delete program request for another HEI' });
-    }
-
-    if (requestRow.status === 'Approved') {
-      return res.status(400).json({ error: 'Approved program requests cannot be deleted' });
     }
 
     const { error: deleteError } = await supabase

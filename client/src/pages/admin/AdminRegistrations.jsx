@@ -173,7 +173,14 @@ const AdminRegistrations = () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to approve registration');
+        const baseMessage = data.error || 'Failed to approve registration';
+        const extraHeiMessage = data.hei_message || data.hei_status;
+        const fullMessage = extraHeiMessage
+          ? `${baseMessage}\n\nHEI record status: ${extraHeiMessage}`
+          : baseMessage;
+        console.error('Approve registration error (API):', fullMessage);
+        alert(fullMessage);
+        return;
       }
       setRegistrations(registrations.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
 
