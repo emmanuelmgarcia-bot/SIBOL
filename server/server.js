@@ -11,6 +11,7 @@ dotenv.config();
 const authRoutes = require('./routes/authRoutes');
 const heiRoutes = require('./routes/heiRoutes');
 const registrationRoutes = require('./routes/registrationRoutes');
+const websiteRoutes = require('./routes/websiteRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/heis', heiRoutes);
 app.use('/api/registrations', registrationRoutes);
+app.use('/api/website', websiteRoutes);
 
 let locationData = {
     regions: [],

@@ -7,7 +7,8 @@ import {
   FileText, 
   Users,
   User,
-  LogOut 
+  LogOut,
+  Globe 
 } from 'lucide-react';
 
 const AdminLayout = ({ children }) => {
@@ -15,6 +16,7 @@ const AdminLayout = ({ children }) => {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState('');
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   // Helper to check active route
   const isActive = (path) => location.pathname === path;
@@ -33,9 +35,10 @@ const AdminLayout = ({ children }) => {
     }
     try {
       const parsed = JSON.parse(stored);
-      const isSuperAdmin =
+      const superFlag =
         parsed.username === 'superched' || parsed.role === 'superadmin';
-      if (isSuperAdmin) {
+      setIsSuperAdmin(!!superFlag);
+      if (superFlag) {
         setDisplayName('superuser');
       } else if (parsed.assigned_region) {
         setDisplayName(`${parsed.assigned_region} Office`);
@@ -102,6 +105,32 @@ const AdminLayout = ({ children }) => {
               <Link to="/admin/registrations" className={`flex items-center gap-3 px-6 py-3 hover:bg-blue-800 ${isActive('/admin/registrations') ? 'bg-blue-800 border-l-4 border-chedGold' : ''}`}>
                 <Users size={18} /> Registrations
               </Link>
+              {isSuperAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const envBase = import.meta.env.VITE_SIBOL_SITE_URL;
+                    let baseUrl = envBase && typeof envBase === 'string' && envBase.trim()
+                      ? envBase.trim()
+                      : null;
+
+                    if (!baseUrl) {
+                      if (window.location.hostname === 'localhost') {
+                        baseUrl = 'http://localhost:5174';
+                      } else {
+                        baseUrl = window.location.origin;
+                      }
+                    }
+
+                    const normalizedBase = baseUrl.replace(/\/$/, '');
+                    const url = `${normalizedBase}/admin`;
+                    window.open(url, '_blank');
+                  }}
+                  className="w-full flex items-center gap-3 px-6 py-3 hover:bg-blue-800 text-left"
+                >
+                  <Globe size={18} /> Edit Website
+                </button>
+              )}
             </>
           )}
 
