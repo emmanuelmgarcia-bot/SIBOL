@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Eye, Download, Calendar } from 'lucide-react';
+import { FileText, Download, Calendar, Trash2 } from 'lucide-react';
 
 const HEISubmissions = () => {
   const [activeTab, setActiveTab] = useState('Form 1');
@@ -120,18 +120,6 @@ const HEISubmissions = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          if (item.fileId) {
-                            const url = `https://drive.google.com/file/d/${item.fileId}/view`;
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
-                        className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors"
-                      >
-                          <Eye size={14} /> View
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
                           const apiBase =
                             window.location.hostname === 'localhost'
                               ? 'http://localhost:5000'
@@ -139,9 +127,49 @@ const HEISubmissions = () => {
                           const url = `${apiBase}/api/heis/submissions/${item.id}/pdf`;
                           window.open(url, '_blank');
                         }}
-                        className="flex items-center gap-1 px-3 py-1.5 text-green-600 bg-green-50 hover:bg-green-100 rounded text-xs font-bold transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors"
                       >
-                          <Download size={14} /> Download
+                          <Download size={14} /> View
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const confirmed = window.confirm('Delete this submission?');
+                          if (!confirmed) return;
+                          const userRaw = localStorage.getItem('sibol_user');
+                          const user = userRaw ? JSON.parse(userRaw) : null;
+                          const heiId = user && user.hei_id ? user.hei_id : null;
+                          if (!heiId) {
+                            alert('User HEI ID not found');
+                            return;
+                          }
+                          try {
+                            const apiBase =
+                              window.location.hostname === 'localhost'
+                                ? 'http://localhost:5000'
+                                : '';
+                            const response = await fetch(`${apiBase}/api/heis/submissions/${encodeURIComponent(item.id)}`, {
+                              method: 'DELETE',
+                              headers: {
+                                'Content-Type': 'application/json'
+                              },
+                              body: JSON.stringify({ heiId })
+                            });
+                            const data = await response.json();
+                            if (!response.ok) {
+                              throw new Error(data.error || 'Failed to delete submission');
+                            }
+                            alert('Submission deleted.');
+                            // Remove from Form 1 list
+                            setSubmissionsForm1(prev => prev.filter(s => s.id !== item.id));
+                          } catch (err) {
+                            console.error('Delete submission error:', err);
+                            alert(err.message || 'Failed to delete submission');
+                          }
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded text-xs font-bold transition-colors"
+                      >
+                          <Trash2 size={14} /> Delete
                       </button>
                     </td>
                   </tr>
@@ -182,18 +210,6 @@ const HEISubmissions = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          if (item.fileId) {
-                            const url = `https://drive.google.com/file/d/${item.fileId}/view`;
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
-                        className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors"
-                      >
-                          <Eye size={14} /> View
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
                           const apiBase =
                             window.location.hostname === 'localhost'
                               ? 'http://localhost:5000'
@@ -201,9 +217,49 @@ const HEISubmissions = () => {
                           const url = `${apiBase}/api/heis/submissions/${item.id}/pdf`;
                           window.open(url, '_blank');
                         }}
-                        className="flex items-center gap-1 px-3 py-1.5 text-green-600 bg-green-50 hover:bg-green-100 rounded text-xs font-bold transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded text-xs font-bold transition-colors"
                       >
-                          <Download size={14} /> Download
+                          <Download size={14} /> View
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const confirmed = window.confirm('Delete this submission?');
+                          if (!confirmed) return;
+                          const userRaw = localStorage.getItem('sibol_user');
+                          const user = userRaw ? JSON.parse(userRaw) : null;
+                          const heiId = user && user.hei_id ? user.hei_id : null;
+                          if (!heiId) {
+                            alert('User HEI ID not found');
+                            return;
+                          }
+                          try {
+                            const apiBase =
+                              window.location.hostname === 'localhost'
+                                ? 'http://localhost:5000'
+                                : '';
+                            const response = await fetch(`${apiBase}/api/heis/submissions/${encodeURIComponent(item.id)}`, {
+                              method: 'DELETE',
+                              headers: {
+                                'Content-Type': 'application/json'
+                              },
+                              body: JSON.stringify({ heiId })
+                            });
+                            const data = await response.json();
+                            if (!response.ok) {
+                              throw new Error(data.error || 'Failed to delete submission');
+                            }
+                            alert('Submission deleted.');
+                            // Remove from Form 2 list
+                            setSubmissionsForm2(prev => prev.filter(s => s.id !== item.id));
+                          } catch (err) {
+                            console.error('Delete submission error:', err);
+                            alert(err.message || 'Failed to delete submission');
+                          }
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded text-xs font-bold transition-colors"
+                      >
+                          <Trash2 size={14} /> Delete
                       </button>
                     </td>
                   </tr>

@@ -118,9 +118,9 @@ const uploadSubmission = async (req, res) => {
           excelRow.getCell('E').value = row.program || '';
           excelRow.getCell('H').value = row.faculty || '';
           excelRow.getCell('J').value = row.status || '';
-          if (row.education === 'Bachelors') {
+          if (row.education === "Bachelor's") {
             excelRow.getCell('K').value = '✔';
-          } else if (row.education === 'Masters') {
+          } else if (row.education === "Master's") {
             excelRow.getCell('L').value = '✔';
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
@@ -136,9 +136,9 @@ const uploadSubmission = async (req, res) => {
           excelRow.getCell('E').value = row.program || '';
           excelRow.getCell('H').value = row.faculty || '';
           excelRow.getCell('J').value = row.status || '';
-          if (row.education === 'Bachelors') {
+          if (row.education === "Bachelor's") {
             excelRow.getCell('K').value = '✔';
-          } else if (row.education === 'Masters') {
+          } else if (row.education === "Master's") {
             excelRow.getCell('L').value = '✔';
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
@@ -158,9 +158,9 @@ const uploadSubmission = async (req, res) => {
           excelRow.getCell('E').value = row.program || '';
           excelRow.getCell('H').value = row.faculty || '';
           excelRow.getCell('J').value = row.status || '';
-          if (row.education === 'Bachelors') {
+          if (row.education === "Bachelor's") {
             excelRow.getCell('K').value = '✔';
-          } else if (row.education === 'Masters') {
+          } else if (row.education === "Master's") {
             excelRow.getCell('L').value = '✔';
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
@@ -176,9 +176,9 @@ const uploadSubmission = async (req, res) => {
           excelRow.getCell('E').value = row.program || '';
           excelRow.getCell('H').value = row.faculty || '';
           excelRow.getCell('J').value = row.status || '';
-          if (row.education === 'Bachelors') {
+          if (row.education === "Bachelor's") {
             excelRow.getCell('K').value = '✔';
-          } else if (row.education === 'Masters') {
+          } else if (row.education === "Master's") {
             excelRow.getCell('L').value = '✔';
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
@@ -205,14 +205,30 @@ const uploadSubmission = async (req, res) => {
           excelRow.getCell('G').value = row.studentsAy3 || row.students_ay3 || '';
           excelRow.getCell('H').value = row.faculty || '';
           excelRow.getCell('J').value = row.status || '';
-          if (row.education === 'Bachelors') {
+          if (row.education === "Bachelor's") {
             excelRow.getCell('K').value = '✔';
-          } else if (row.education === 'Masters') {
+          } else if (row.education === "Master's") {
             excelRow.getCell('L').value = '✔';
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
           }
           excelRow.commit();
+        });
+      }
+
+      if (sheet && sheet.columns) {
+        sheet.columns.forEach(column => {
+          let maxLength = 0;
+          column.eachCell({ includeEmpty: true }, cell => {
+            const value = cell.value;
+            if (value !== null && value !== undefined) {
+              const text = value.toString();
+              if (text.length > maxLength) {
+                maxLength = text.length;
+              }
+            }
+          });
+          column.width = maxLength > 0 ? maxLength + 2 : 10;
         });
       }
 
@@ -349,10 +365,60 @@ const downloadSubmissionPdf = async (req, res) => {
       : (data.file_name || 'submission');
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="${baseName}.pdf"`);
     return res.send(pdfBuffer);
   } catch (err) {
     console.error('Download submission PDF exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+const deleteSubmission = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { heiId } = req.body || {};
+
+    if (!id || !heiId) {
+      return res.status(400).json({ error: 'Submission id and heiId are required' });
+    }
+
+    const parsedHeiId = parseInt(heiId, 10);
+    if (Number.isNaN(parsedHeiId)) {
+      return res.status(400).json({ error: 'Invalid heiId value' });
+    }
+
+    const { data: submissionRow, error: fetchError } = await supabase
+      .from('submissions')
+      .select('id, hei_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      console.error('Supabase fetch submission for delete error:', fetchError.message);
+      return res.status(500).json({ error: 'Failed to load submission: ' + fetchError.message });
+    }
+
+    if (!submissionRow) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+
+    if (submissionRow.hei_id !== parsedHeiId) {
+      return res.status(403).json({ error: 'Not allowed to delete submission for another HEI' });
+    }
+
+    const { error: deleteError } = await supabase
+      .from('submissions')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error('Supabase delete submission error:', deleteError.message);
+      return res.status(500).json({ error: 'Failed to delete submission: ' + deleteError.message });
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('Delete submission exception:', err.message);
     return res.status(500).json({ error: 'Server error: ' + err.message });
   }
 };
@@ -1258,6 +1324,7 @@ module.exports = {
   getAllHeis,
   uploadSubmission,
   getSubmissions,
+  deleteSubmission,
   getMasterPrograms,
   createMasterProgram,
   deleteMasterProgram,

@@ -20,6 +20,7 @@ const Form2 = () => {
   const [specializationSubjects, setSpecializationSubjects] = useState([]);
   const [programOptions, setProgramOptions] = useState([]);
   const [facultyOptions, setFacultyOptions] = useState([]);
+  const [facultyEducation, setFacultyEducation] = useState({});
 
   const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
 
@@ -51,13 +52,26 @@ const Form2 = () => {
         const programsRes = await fetch(`${apiBase}/api/heis/programs/master`);
         const programsData = await programsRes.json();
         if (programsRes.ok && Array.isArray(programsData)) {
-          setProgramOptions(programsData.map(p => `${p.code} - ${p.title}`));
+          setProgramOptions(
+            programsData.map(p => {
+              const title = p.title || '';
+              if (title.length > 15) {
+                return p.code;
+              }
+              return `${p.code} - ${title}`;
+            })
+          );
         }
 
         const facultyRes = await fetch(`${apiBase}/api/heis/faculty?heiId=${encodeURIComponent(heiId)}`);
         const facultyData = await facultyRes.json();
         if (facultyRes.ok && Array.isArray(facultyData)) {
           setFacultyOptions(facultyData.map(f => f.name));
+          const eduMap = {};
+          facultyData.forEach(f => {
+            eduMap[f.name] = f.education;
+          });
+          setFacultyEducation(eduMap);
         }
       } catch (err) {
         console.error('Error loading form 2 options:', err);
@@ -69,13 +83,15 @@ const Form2 = () => {
 
   const addRowA = () => {
     if (!inputA.subject || !inputA.faculty) return;
-    setRowsA([...rowsA, { id: Date.now(), ...inputA, units: 3, status: 'Permanent', education: 'PhD' }]);
+    const education = facultyEducation[inputA.faculty] || '';
+    setRowsA([...rowsA, { id: Date.now(), ...inputA, units: 3, status: 'Permanent', education }]);
     setInputA({ subject: '', program: '', faculty: '' });
   };
 
   const addRowB = () => {
     if (!inputB.subject || !inputB.faculty) return;
-    setRowsB([...rowsB, { id: Date.now(), ...inputB, units: 3, status: 'Contractual', education: 'MS' }]);
+    const education = facultyEducation[inputB.faculty] || '';
+    setRowsB([...rowsB, { id: Date.now(), ...inputB, units: 3, status: 'Contractual', education }]);
     setInputB({ subject: '', program: '', faculty: '' });
   };
 
@@ -83,17 +99,18 @@ const Form2 = () => {
     // Basic validation (Only Subject/Specialization & Faculty required now)
     if (!inputC.subject || !inputC.faculty) return;
 
+    const education = facultyEducation[inputC.faculty] || '';
+
     setRowsC([...rowsC, { 
       id: Date.now(), 
       ...inputC, 
-      // Initialize table columns as empty/dash
       govtAuthority: '-', 
       ayStarted: '-', 
       studentsAy1: '-', 
       studentsAy2: '-', 
       studentsAy3: '-',
       status: 'Permanent', 
-      education: 'PhD'     
+      education     
     }]);
 
     // Reset form

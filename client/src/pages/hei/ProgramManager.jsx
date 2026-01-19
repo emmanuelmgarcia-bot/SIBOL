@@ -362,9 +362,13 @@ const ProgramManager = () => {
                             required
                         >
                             <option value="">Select a program...</option>
-                            {masterPrograms.map(p => (
-                                <option key={p.id} value={p.code}>{p.code} - {p.title}</option>
-                            ))}
+                            {masterPrograms.map(p => {
+                                const title = p.title || '';
+                                const display = title.length > 15 ? p.code : `${p.code} - ${title}`;
+                                return (
+                                    <option key={p.id} value={p.code}>{display}</option>
+                                );
+                            })}
                         </select>
                     </div>
 

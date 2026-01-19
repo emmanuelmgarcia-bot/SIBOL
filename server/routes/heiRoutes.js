@@ -3,6 +3,7 @@ const {
   getAllHeis,
   uploadSubmission,
   getSubmissions,
+  deleteSubmission,
   getMasterPrograms,
   createMasterProgram,
   deleteMasterProgram,
@@ -30,6 +31,7 @@ router.get('/', getAllHeis);
 router.post('/submissions', uploadSubmission);
 router.get('/submissions', getSubmissions);
 router.get('/submissions/:id/pdf', downloadSubmissionPdf);
+router.delete('/submissions/:id', deleteSubmission);
 
 router.get('/programs/master', getMasterPrograms);
 router.post('/programs/master', createMasterProgram);
