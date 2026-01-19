@@ -1,0 +1,43 @@
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useData } from '../context/DataContext';
+
+const Hero = () => {
+  const { heroSlides } = useData();
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  if (!heroSlides || heroSlides.length === 0) {
+      return <div className="w-full h-[500px] bg-gray-200 flex items-center justify-center">No images available</div>;
+  }
+
+  const prevSlide = () => {
+    const isFirstSlide = currentIndex === 0;
+    const newIndex = isFirstSlide ? heroSlides.length - 1 : currentIndex - 1;
+    setCurrentIndex(newIndex);
+  };
+
+  const nextSlide = () => {
+    const isLastSlide = currentIndex === heroSlides.length - 1;
+    const newIndex = isLastSlide ? 0 : currentIndex + 1;
+    setCurrentIndex(newIndex);
+  };
+
+  return (
+    <div className="w-full h-[500px] relative group overflow-hidden">
+      <div
+        style={{ backgroundImage: `url(${heroSlides[currentIndex]?.url})` }}
+        className="w-full h-full bg-center bg-cover duration-500"
+      ></div>
+      {/* Left Arrow */}
+      <div className="hidden group-hover:block absolute top-[50%] -translate-x-0 translate-y-[-50%] left-5 text-2xl rounded-full p-2 bg-black/20 text-white cursor-pointer hover:bg-black/40 transition">
+        <ChevronLeft onClick={prevSlide} size={30} />
+      </div>
+      {/* Right Arrow */}
+      <div className="hidden group-hover:block absolute top-[50%] -translate-x-0 translate-y-[-50%] right-5 text-2xl rounded-full p-2 bg-black/20 text-white cursor-pointer hover:bg-black/40 transition">
+        <ChevronRight onClick={nextSlide} size={30} />
+      </div>
+    </div>
+  );
+};
+
+export default Hero;
