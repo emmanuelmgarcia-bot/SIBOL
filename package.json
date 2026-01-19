@@ -1,0 +1,11 @@
+{
+  "name": "sibol-app",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npm install --prefix server && npm install --prefix client --include=dev && npm run build --prefix client",
+    "start": "node server/server.js"
+  },
+  "engines": {
+    "node": ">=20.12.0 <21.0.0"
+  }
+}
