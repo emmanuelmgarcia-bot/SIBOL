@@ -125,6 +125,7 @@ const uploadSubmission = async (req, res) => {
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
           }
+          excelRow.font = { name: 'Arial', size: 9 };
           excelRow.commit();
         });
 
@@ -143,6 +144,7 @@ const uploadSubmission = async (req, res) => {
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
           }
+          excelRow.font = { name: 'Arial', size: 9 };
           excelRow.commit();
         });
       } else if (formType === 'form2') {
@@ -165,6 +167,7 @@ const uploadSubmission = async (req, res) => {
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
           }
+          excelRow.font = { name: 'Arial', size: 9 };
           excelRow.commit();
         });
 
@@ -183,6 +186,7 @@ const uploadSubmission = async (req, res) => {
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
           }
+          excelRow.font = { name: 'Arial', size: 9 };
           excelRow.commit();
         });
 
@@ -212,23 +216,8 @@ const uploadSubmission = async (req, res) => {
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
           }
+          excelRow.font = { name: 'Arial', size: 9 };
           excelRow.commit();
-        });
-      }
-
-      if (sheet && sheet.columns) {
-        sheet.columns.forEach(column => {
-          let maxLength = 0;
-          column.eachCell({ includeEmpty: true }, cell => {
-            const value = cell.value;
-            if (value !== null && value !== undefined) {
-              const text = value.toString();
-              if (text.length > maxLength) {
-                maxLength = text.length;
-              }
-            }
-          });
-          column.width = maxLength > 0 ? maxLength + 2 : 10;
         });
       }
 
