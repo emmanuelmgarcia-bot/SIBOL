@@ -125,7 +125,6 @@ const uploadSubmission = async (req, res) => {
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
           }
-          excelRow.font = { name: 'Arial', size: 9 };
           excelRow.commit();
         });
 
@@ -144,7 +143,6 @@ const uploadSubmission = async (req, res) => {
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
           }
-          excelRow.font = { name: 'Arial', size: 9 };
           excelRow.commit();
         });
       } else if (formType === 'form2') {
@@ -167,7 +165,6 @@ const uploadSubmission = async (req, res) => {
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
           }
-          excelRow.font = { name: 'Arial', size: 9 };
           excelRow.commit();
         });
 
@@ -186,7 +183,6 @@ const uploadSubmission = async (req, res) => {
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
           }
-          excelRow.font = { name: 'Arial', size: 9 };
           excelRow.commit();
         });
 
@@ -216,10 +212,21 @@ const uploadSubmission = async (req, res) => {
           } else if (row.education === 'Doctoral') {
             excelRow.getCell('M').value = '✔';
           }
-          excelRow.font = { name: 'Arial', size: 9 };
           excelRow.commit();
         });
       }
+
+      const columnsSize9 = ['A', 'D', 'E', 'H', 'J', 'K', 'L', 'M'];
+
+      sheet.eachRow({ includeEmpty: false }, (row) => {
+        row.eachCell({ includeEmpty: false }, (cell) => {
+          const columnLetter = cell.address.replace(/[0-9]/g, '');
+          if (columnsSize9.includes(columnLetter)) {
+            const existingFont = cell.font || {};
+            cell.font = { ...existingFont, size: 9 };
+          }
+        });
+      });
 
       let buffer;
       try {
