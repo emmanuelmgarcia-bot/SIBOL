@@ -27,13 +27,23 @@ import AdminSubmissions from './pages/admin/AdminSubmissions';
 import AdminRegistrations from './pages/admin/AdminRegistrations';
 import AdminAccount from './pages/admin/AdminAccount';
 
+const externalHomepage = import.meta.env.VITE_SIBOL_SITE_URL;
+
+const RootRoute = () => {
+  const target = externalHomepage && externalHomepage.trim();
+  if (target) {
+    window.location.href = target.replace(/\/$/, '');
+    return null;
+  }
+  return <Navigate to="/login" replace />;
+};
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         {/* ================= PUBLIC ROUTES ================= */}
-        {/* Redirect root to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<RootRoute />} />
         
         {/* Login Page (Handles both HEI and Admin login via internal logic) */}
         <Route path="/login" element={<Login />} />
