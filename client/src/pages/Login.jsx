@@ -123,7 +123,7 @@ const Login = () => {
   return (
     <AuthLayout>
       <div className="flex flex-col items-center mb-6">
-        <img src="/assets/ched-logo.png" alt="CHED Seal" className="w-16 h-16 mb-2" />
+        <img src="/portal/assets/ched-logo.png" alt="CHED Seal" className="w-16 h-16 mb-2" />
         <h2 className="text-xl font-medium text-gray-700">
           {isAdmin ? 'CHED Login' : 'HEI Login'}
         </h2>

@@ -9,7 +9,7 @@ const AuthLayout = ({ children }) => {
         {/* Changed mb-8 to mb-3 to bring tagline much closer */}
         <div className="max-w-xl mb-3">
           <img 
-            src="/assets/sibol.png" 
+            src="/portal/assets/sibol.png" 
             alt="CHED SIBOL Logo" 
             className="w-full h-auto object-contain drop-shadow-2xl" 
           />

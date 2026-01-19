@@ -1,96 +1,187 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const DataContext = createContext();
 
 export const useData = () => useContext(DataContext);
 
+const defaultHeroSlides = [
+  { id: 1, url: 'https://placehold.co/1920x600/004d00/white?text=Sibol+Hero+Image+1' },
+  { id: 2, url: 'https://placehold.co/1920x600/006400/white?text=Sibol+Hero+Image+2' },
+  { id: 3, url: 'https://placehold.co/1920x600/003300/white?text=Sibol+Hero+Image+3' },
+];
+
+const defaultNewsItems = [
+  {
+    id: 1,
+    title: 'Caption Caption Caption',
+    image: 'https://placehold.co/600x400/e0e0e0/333?text=News+Image+1',
+    category: ''
+  },
+  {
+    id: 2,
+    title: '‘Dreadful wrongs’: WA governor apologises to Noongar people for 1834 Pinjarra massacre',
+    image: 'https://placehold.co/600x400/e0e0e0/333?text=News+Image+2',
+    category: ''
+  },
+  {
+    id: 3,
+    title: 'Australian governments ‘turning their backs’ on soaring Indigenous incarceration',
+    category: 'Indigenous affairs reporting',
+    image: 'https://placehold.co/600x400/e0e0e0/333?text=News+Image+3',
+  },
+];
+
+const defaultEventItems = [
+  {
+    id: 1,
+    title: 'Philippines Celebrates Indigenous People’s Day',
+    image: 'https://placehold.co/600x400/003399/white?text=IP+Day+Poster',
+    category: ''
+  },
+  {
+    id: 2,
+    title: 'Indigenous affairs reporting: Australian governments ‘turning their backs’',
+    category: 'Indigenous affairs reporting',
+    image: 'https://placehold.co/600x400/e0e0e0/333?text=Event+Image+2',
+  },
+  {
+    id: 3,
+    title: '‘Dreadful wrongs’: WA governor apologises to Noongar people for 1834 Pinjarra massacre',
+    image: 'https://placehold.co/600x400/e0e0e0/333?text=Event+Image+3',
+    category: ''
+  },
+];
+
 export const DataProvider = ({ children }) => {
-  const [heroSlides, setHeroSlides] = useState([
-    { id: 1, url: 'https://placehold.co/1920x600/004d00/white?text=Sibol+Hero+Image+1' },
-    { id: 2, url: 'https://placehold.co/1920x600/006400/white?text=Sibol+Hero+Image+2' },
-    { id: 3, url: 'https://placehold.co/1920x600/003300/white?text=Sibol+Hero+Image+3' },
-  ]);
+  const [heroSlides, setHeroSlides] = useState(defaultHeroSlides);
+  const [newsItems, setNewsItems] = useState(defaultNewsItems);
+  const [eventItems, setEventItems] = useState(defaultEventItems);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
-  const [newsItems, setNewsItems] = useState([
-    {
-      id: 1,
-      title: "Caption Caption Caption",
-      image: "https://placehold.co/600x400/e0e0e0/333?text=News+Image+1",
-      category: ""
-    },
-    {
-      id: 2,
-      title: "‘Dreadful wrongs’: WA governor apologises to Noongar people for 1834 Pinjarra massacre",
-      image: "https://placehold.co/600x400/e0e0e0/333?text=News+Image+2",
-      category: ""
-    },
-    {
-      id: 3,
-      title: "Australian governments ‘turning their backs’ on soaring Indigenous incarceration",
-      category: "Indigenous affairs reporting",
-      image: "https://placehold.co/600x400/e0e0e0/333?text=News+Image+3",
-    },
-  ]);
+  const buildApiUrl = (path) => {
+    const baseEnv = import.meta.env.VITE_API_BASE_URL;
+    const base = baseEnv && typeof baseEnv === 'string' ? baseEnv.trim() : '';
+    if (!base) {
+      return path;
+    }
+    const normalizedBase = base.replace(/\/$/, '');
+    return `${normalizedBase}${path}`;
+  };
 
-  const [eventItems, setEventItems] = useState([
-    {
-      id: 1,
-      title: "Philippines Celebrates Indigenous People’s Day",
-      image: "https://placehold.co/600x400/003399/white?text=IP+Day+Poster",
-      category: ""
-    },
-    {
-      id: 2,
-      title: "Indigenous affairs reporting: Australian governments ‘turning their backs’",
-      category: "Indigenous affairs reporting",
-      image: "https://placehold.co/600x400/e0e0e0/333?text=Event+Image+2",
-    },
-    {
-      id: 3,
-      title: "‘Dreadful wrongs’: WA governor apologises to Noongar people for 1834 Pinjarra massacre",
-      image: "https://placehold.co/600x400/e0e0e0/333?text=Event+Image+3",
-      category: ""
-    },
-  ]);
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const res = await fetch(buildApiUrl('/api/website/content'));
+        if (!res.ok) {
+          throw new Error(`Status ${res.status}`);
+        }
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+          setHeroSlides(Array.isArray(data.heroSlides) ? data.heroSlides : []);
+          setNewsItems(Array.isArray(data.newsItems) ? data.newsItems : []);
+          setEventItems(Array.isArray(data.eventItems) ? data.eventItems : []);
+        }
+      } catch (err) {
+        console.error('Failed to load website content', err);
+        setLoadError(err.message || 'Failed to load website content');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const saveWebsiteContent = async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(buildApiUrl('/api/website/content'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ heroSlides, newsItems, eventItems }),
+      });
+      if (!res.ok) {
+        let message = `Status ${res.status}`;
+        try {
+          const body = await res.json();
+          if (body && body.error) {
+            message = body.error;
+          }
+        } catch {
+        }
+        throw new Error(message);
+      }
+    } catch (err) {
+      console.error('Failed to save website content', err);
+      setSaveError(err.message || 'Failed to save website content');
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const addHeroSlide = (url) => {
-    setHeroSlides([...heroSlides, { id: Date.now(), url }]);
+    setHeroSlides((prev) => [...prev, { id: Date.now(), url }]);
   };
 
   const removeHeroSlide = (id) => {
-    setHeroSlides(heroSlides.filter(slide => slide.id !== id));
+    setHeroSlides((prev) => prev.filter((slide) => slide.id !== id));
   };
 
   const addNewsItem = (item) => {
-    setNewsItems([...newsItems, { ...item, id: Date.now() }]);
+    setNewsItems((prev) => [...prev, { ...item, id: Date.now() }]);
   };
 
   const updateNewsItem = (id, updatedItem) => {
-    setNewsItems(newsItems.map(item => item.id === id ? { ...item, ...updatedItem } : item));
+    setNewsItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updatedItem } : item))
+    );
   };
 
   const removeNewsItem = (id) => {
-    setNewsItems(newsItems.filter(item => item.id !== id));
+    setNewsItems((prev) => prev.filter((item) => item.id !== id));
   };
 
   const addEventItem = (item) => {
-    setEventItems([...eventItems, { ...item, id: Date.now() }]);
+    setEventItems((prev) => [...prev, { ...item, id: Date.now() }]);
   };
 
   const updateEventItem = (id, updatedItem) => {
-    setEventItems(eventItems.map(item => item.id === id ? { ...item, ...updatedItem } : item));
+    setEventItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updatedItem } : item))
+    );
   };
 
   const removeEventItem = (id) => {
-    setEventItems(eventItems.filter(item => item.id !== id));
+    setEventItems((prev) => prev.filter((item) => item.id !== id));
   };
 
   return (
-    <DataContext.Provider value={{
-      heroSlides, addHeroSlide, removeHeroSlide,
-      newsItems, addNewsItem, updateNewsItem, removeNewsItem,
-      eventItems, addEventItem, updateEventItem, removeEventItem
-    }}>
+    <DataContext.Provider
+      value={{
+        heroSlides,
+        newsItems,
+        eventItems,
+        addHeroSlide,
+        removeHeroSlide,
+        addNewsItem,
+        updateNewsItem,
+        removeNewsItem,
+        addEventItem,
+        updateEventItem,
+        removeEventItem,
+        saveWebsiteContent,
+        loading,
+        loadError,
+        saving,
+        saveError,
+      }}
+    >
       {children}
     </DataContext.Provider>
   );
