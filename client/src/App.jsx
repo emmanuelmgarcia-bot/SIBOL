@@ -23,20 +23,11 @@ import AdminSubmissions from './pages/admin/AdminSubmissions';
 import AdminRegistrations from './pages/admin/AdminRegistrations';
 import AdminAccount from './pages/admin/AdminAccount';
 
-const externalHomepage = import.meta.env.VITE_SIBOL_SITE_URL || 'http://localhost:5173';
-
-const RootRoute = () => {
-  const target = externalHomepage.trim();
-  if (target) {
-    window.location.href = target.replace(/\/$/, '');
-    return null;
-  }
-  return <Navigate to="/login" replace />;
-};
+const RootRoute = () => <Navigate to="/login" replace />;
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/portal">
       <Routes>
         <Route path="/" element={<RootRoute />} />
         <Route path="/login" element={<Login />} />

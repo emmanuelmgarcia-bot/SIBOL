@@ -2,7 +2,7 @@
   "name": "sibol-app",
   "version": "1.0.0",
   "scripts": {
-    "build": "npm install --prefix server && npm install --prefix client --include=dev && npm run build --prefix client",
+    "build": "npm install --prefix server && npm install --prefix client --include=dev && npm run build --prefix client && npm install --prefix SibolSite --include=dev && npm run build --prefix SibolSite",
     "start": "node server/server.js"
   },
   "engines": {

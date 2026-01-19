@@ -142,11 +142,19 @@ app.get('/api/hei-data', (req, res) => {
 // ==========================================
 // 3. START SERVER
 // ==========================================
-// Serve static assets in production
-app.use(express.static(path.join(__dirname, '../client/dist')));
+const clientDistPath = path.join(__dirname, '../client/dist');
+const sibolDistPath = path.join(__dirname, '../SibolSite/dist');
+
+app.use('/portal', express.static(clientDistPath));
+
+app.get('/portal/*', (req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+});
+
+app.use(express.static(sibolDistPath));
 
 app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../client', 'dist', 'index.html'));
+    res.sendFile(path.join(sibolDistPath, 'index.html'));
 });
 
 app.listen(PORT, () => {
