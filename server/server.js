@@ -6,7 +6,7 @@ const path = require('path');
 const csv = require('csv-parser');
 
 // Load Env Variables
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const authRoutes = require('./routes/authRoutes');
 const heiRoutes = require('./routes/heiRoutes');
