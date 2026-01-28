@@ -3,9 +3,8 @@ import React, { useState, useEffect } from 'react';
 const Stats = () => {
   const [statsData, setStatsData] = useState({
     heiCount: 0,
-    facultyCount: 0,
-    programCount: 0,
-    studentCount: 0
+    ipFacultyCount: 0,
+    ipSubjectCount: 0
   });
 
   useEffect(() => {
@@ -17,9 +16,8 @@ const Stats = () => {
           const data = await res.json();
           setStatsData({
             heiCount: data.heiCount || 0,
-            facultyCount: data.facultyCount || 0,
-            programCount: data.programCount || 0,
-            studentCount: data.studentCount || 0
+            ipFacultyCount: data.ipFacultyCount || 0,
+            ipSubjectCount: data.ipSubjectCount || 0
           });
         }
       } catch (err) {
@@ -32,9 +30,8 @@ const Stats = () => {
 
   const stats = [
     { value: statsData.heiCount.toLocaleString(), label: "Partner HEIs" },
-    { value: statsData.facultyCount.toLocaleString(), label: "Faculty Members" },
-    { value: statsData.programCount.toLocaleString(), label: "Programs Offered" },
-    { value: statsData.studentCount.toLocaleString(), label: "Enrolled Students" },
+    { value: statsData.ipSubjectCount.toLocaleString(), label: "Total IP subjects" },
+    { value: statsData.ipFacultyCount.toLocaleString(), label: "IP Education Faculties" }
   ];
 
   return (
@@ -43,7 +40,7 @@ const Stats = () => {
             <h2 className="text-3xl font-bold mb-12 border-b-4 border-green-600 inline-block pb-2 text-white">
                 Sibol Stats
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
                 {stats.map((stat, index) => (
                 <div key={index} className="flex flex-col items-center">
                     <span className="text-6xl font-normal mb-2">{stat.value}</span>
