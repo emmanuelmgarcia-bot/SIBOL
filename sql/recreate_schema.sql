@@ -14,7 +14,6 @@ drop table if exists public.uploads cascade;
 drop table if exists public.registrations cascade;
 drop table if exists public.heis cascade;
 drop table if exists public.program_master cascade;
-drop table if exists public.website_content cascade;
 
 -- 2. CREATE TABLES
 
@@ -30,6 +29,15 @@ create table public.heis (
 );
 alter table public.heis enable row level security;
 
+-- RLS Policies for HEIs
+create policy "Enable read access for all users" on public.heis for select using (true);
+create policy "Enable insert/update/delete for admins only" on public.heis for all using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  )
+);
+
 -- Profiles Table (Users/Admins)
 create table public.profiles (
   id uuid default gen_random_uuid() primary key,
@@ -42,6 +50,21 @@ create table public.profiles (
   created_at timestamptz default now()
 );
 alter table public.profiles enable row level security;
+
+-- RLS Policies for Profiles
+create policy "Users can view own profile" on public.profiles for select using (auth.uid() = id);
+create policy "Admins can view all profiles" on public.profiles for select using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  )
+);
+create policy "Admins can update all profiles" on public.profiles for update using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  )
+);
 
 -- Registrations Table (Pending User Signups)
 create table public.registrations (
@@ -67,6 +90,15 @@ create table public.registrations (
 );
 alter table public.registrations enable row level security;
 
+-- RLS Policies for Registrations
+create policy "Enable insert for everyone" on public.registrations for insert with check (true);
+create policy "Admins can view/update all registrations" on public.registrations for all using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  )
+);
+
 -- Submissions Table (Files uploaded by HEIs)
 create table public.submissions (
   id uuid default gen_random_uuid() primary key,
@@ -81,6 +113,32 @@ create table public.submissions (
 );
 alter table public.submissions enable row level security;
 
+-- RLS Policies for Submissions
+create policy "Admins can do everything on submissions" on public.submissions for all using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  )
+);
+create policy "HEIs can view own submissions" on public.submissions for select using (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
+create policy "HEIs can insert own submissions" on public.submissions for insert with check (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
+create policy "HEIs can update/delete own submissions" on public.submissions for update using (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
+
 -- Program Master Table (List of standard programs)
 create table public.program_master (
   id uuid default gen_random_uuid() primary key,
@@ -89,6 +147,15 @@ create table public.program_master (
   created_at timestamptz default now()
 );
 alter table public.program_master enable row level security;
+
+-- RLS Policies for Program Master
+create policy "Enable read access for all users" on public.program_master for select using (true);
+create policy "Admins can manage program master" on public.program_master for all using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  )
+);
 
 -- Program Requests Table (New program applications)
 create table public.program_requests (
@@ -106,8 +173,34 @@ create table public.program_requests (
 );
 alter table public.program_requests enable row level security;
 
+-- RLS Policies for Program Requests
+create policy "Admins can do everything on program requests" on public.program_requests for all using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  )
+);
+create policy "HEIs can view own program requests" on public.program_requests for select using (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
+create policy "HEIs can insert own program requests" on public.program_requests for insert with check (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
+create policy "HEIs can update/delete own program requests" on public.program_requests for update using (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
+
 -- Website Content Table (CMS for homepage)
-create table public.website_content (
+create table if not exists public.website_content (
   id integer primary key,
   hero_json jsonb,
   news_json jsonb,
@@ -115,6 +208,18 @@ create table public.website_content (
   created_at timestamptz default now()
 );
 alter table public.website_content enable row level security;
+
+-- RLS Policies for Website Content
+drop policy if exists "Enable read access for all users" on public.website_content;
+create policy "Enable read access for all users" on public.website_content for select using (true);
+
+drop policy if exists "Admins can manage website content" on public.website_content;
+create policy "Admins can manage website content" on public.website_content for all using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  )
+);
 
 -- Faculty Table (For Stats)
 create table public.faculty (
@@ -125,6 +230,32 @@ create table public.faculty (
   created_at timestamptz default now()
 );
 alter table public.faculty enable row level security;
+
+-- RLS Policies for Faculty
+create policy "Admins can do everything on faculty" on public.faculty for all using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  )
+);
+create policy "HEIs can view own faculty" on public.faculty for select using (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
+create policy "HEIs can insert own faculty" on public.faculty for insert with check (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
+create policy "HEIs can update/delete own faculty" on public.faculty for update using (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
 
 -- Subjects/Programs Table (For Stats & Student Counts)
 create table public.subjects (
@@ -147,6 +278,32 @@ create table public.subjects (
   created_at timestamptz default now()
 );
 alter table public.subjects enable row level security;
+
+-- RLS Policies for Subjects
+create policy "Admins can do everything on subjects" on public.subjects for all using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  )
+);
+create policy "HEIs can view own subjects" on public.subjects for select using (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
+create policy "HEIs can insert own subjects" on public.subjects for insert with check (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
+create policy "HEIs can update/delete own subjects" on public.subjects for update using (
+  hei_id in (
+    select hei_id from public.profiles
+    where profiles.id = auth.uid()
+  )
+);
 
 -- 3. FUNCTIONS AND SEED DATA (from create_ched_admin_and_seed.sql)
 

@@ -8,6 +8,7 @@ const Stats = () => {
   });
 
   useEffect(() => {
+    // Fetch stats from the backend
     const fetchStats = async () => {
       try {
         const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
