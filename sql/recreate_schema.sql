@@ -265,6 +265,7 @@ create policy "HEIs can update/delete own faculty" on public.faculty for update 
 create table public.subjects (
   id uuid default gen_random_uuid() primary key,
   hei_id uuid references public.heis(id) on delete cascade,
+  campus text,
   code text,
   description text,
   type text, -- 'Degree Program' or 'Subject'

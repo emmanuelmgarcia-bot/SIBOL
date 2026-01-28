@@ -589,8 +589,16 @@ const listProgramRequests = async (req, res) => {
     const { region, heiId, campus, status } = req.query;
 
     let cleanedHeiId = null;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
     if (heiId && heiId !== 'undefined' && heiId !== 'null') {
-      cleanedHeiId = heiId;
+      if (uuidRegex.test(heiId)) {
+        cleanedHeiId = heiId;
+      } else {
+        // If invalid UUID is passed, return empty array to avoid DB error
+        // Or we could return 400, but returning empty is safer for filtering
+        return res.status(200).json([]);
+      }
     }
 
     let query = supabase
@@ -726,11 +734,6 @@ const updateProgramRequest = async (req, res) => {
       return res.status(400).json({ error: 'Request id and heiId are required' });
     }
 
-    const parsedHeiId = parseInt(heiId, 10);
-    if (Number.isNaN(parsedHeiId)) {
-      return res.status(400).json({ error: 'Invalid heiId value' });
-    }
-
     const { data: requestRow, error: requestError } = await supabase
       .from('program_requests')
       .select('id, hei_id, status')
@@ -848,7 +851,7 @@ const deleteProgramRequest = async (req, res) => {
       return res.status(404).json({ error: 'Program request not found' });
     }
 
-    if (requestRow.hei_id !== parsedHeiId) {
+    if (requestRow.hei_id !== heiId) {
       return res.status(403).json({ error: 'Not allowed to delete program request for another HEI' });
     }
 
