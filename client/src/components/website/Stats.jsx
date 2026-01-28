@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 const Stats = () => {
   const [statsData, setStatsData] = useState({
     heiCount: 0,
-    ipFacultyCount: 0,
+    facultyCount: 0,
     ipSubjectCount: 0
   });
 
@@ -17,7 +17,7 @@ const Stats = () => {
           const data = await res.json();
           setStatsData({
             heiCount: data.heiCount || 0,
-            ipFacultyCount: data.ipFacultyCount || 0,
+            facultyCount: data.facultyCount || 0,
             ipSubjectCount: data.ipSubjectCount || 0
           });
         }
@@ -31,8 +31,8 @@ const Stats = () => {
 
   const stats = [
     { value: statsData.heiCount.toLocaleString(), label: "Partner HEIs" },
-    { value: statsData.ipSubjectCount.toLocaleString(), label: "Total IP subjects" },
-    { value: statsData.ipFacultyCount.toLocaleString(), label: "IP Education Faculties" }
+    { value: statsData.ipSubjectCount.toLocaleString(), label: "IP Subjects" },
+    { value: statsData.facultyCount.toLocaleString(), label: "Total Faculties" }
   ];
 
   return (

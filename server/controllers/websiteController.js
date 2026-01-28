@@ -61,8 +61,47 @@ const saveWebsiteContent = async (req, res) => {
   }
 };
 
+const getStats = async (req, res) => {
+  try {
+    // 1. Partner HEIs (Approved Registrations)
+    const { count: heiCount, error: heiError } = await supabase
+      .from('registrations')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'Approved');
+
+    if (heiError) throw heiError;
+
+    // 2. IP Subjects (Approved & Specific Types)
+    const { count: ipSubjectCount, error: subjectError } = await supabase
+      .from('subjects')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'Approved')
+      .in('type', ['Integrated', 'Elective', 'Degree Program']);
+
+    if (subjectError) throw subjectError;
+
+    // 3. Total Faculties (All entries in faculty table)
+    const { count: facultyCount, error: facultyError } = await supabase
+      .from('faculty')
+      .select('*', { count: 'exact', head: true });
+
+    if (facultyError) throw facultyError;
+
+    return res.status(200).json({
+      heiCount: heiCount || 0,
+      ipSubjectCount: ipSubjectCount || 0,
+      facultyCount: facultyCount || 0
+    });
+
+  } catch (err) {
+    console.error('Get stats exception:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
 module.exports = {
   getWebsiteContent,
-  saveWebsiteContent
+  saveWebsiteContent,
+  getStats
 };
 
