@@ -102,8 +102,8 @@ const loginUser = async (req, res) => {
 
     // Find HEI ID
     const { data: heiList, error: heiListError } = await supabase
-      .from('hei')
-      .select('id, name, campus_name, region')
+      .from('heis')
+      .select('id, name, campus_name, region_destination')
       .ilike('name', heiName) // Case-insensitive match for HEI name
       .limit(10); // Fetch potential matches
 
@@ -113,7 +113,7 @@ const loginUser = async (req, res) => {
        // Filter in memory for exact campus/region match to be safe
        const exactMatch = heiList.find(h => 
           (h.campus_name || '').trim().toLowerCase() === campusName.toLowerCase() &&
-          (h.region || '').trim().toLowerCase() === regionName.toLowerCase()
+          (h.region_destination || '').trim().toLowerCase() === regionName.toLowerCase()
        );
 
        if (exactMatch) {
