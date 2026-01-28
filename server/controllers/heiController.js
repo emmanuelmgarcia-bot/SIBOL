@@ -288,7 +288,7 @@ const uploadSubmission = async (req, res) => {
     if (err.message && err.message.includes('Google service account credentials')) {
       return res.status(500).json({ error: 'Google Drive credentials are not configured on the server' });
     }
-    return res.status(500).json({ error: 'Failed to upload submission' });
+    return res.status(500).json({ error: 'Failed to upload submission: ' + err.message });
   }
 };
 
@@ -550,7 +550,7 @@ const createProgramRequest = async (req, res) => {
         if (uploadErr.message && uploadErr.message.includes('Google service account credentials')) {
           return res.status(500).json({ error: 'Google Drive credentials are not configured on the server' });
         }
-        return res.status(500).json({ error: 'Failed to upload curriculum file' });
+        return res.status(500).json({ error: 'Failed to upload curriculum file: ' + uploadErr.message });
       }
     }
 

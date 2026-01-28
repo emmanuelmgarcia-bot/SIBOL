@@ -2,29 +2,33 @@ const { google } = require('googleapis');
 const { Readable } = require('stream');
 
 const getAuth = () => {
+  // 1. Try Service Account (Recommended: Never expires)
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const privateKey = (process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+
+  if (clientEmail && privateKey) {
+    console.log('Using Google Service Account:', clientEmail); // Debug log
+    return new google.auth.JWT(
+      clientEmail,
+      undefined,
+      privateKey,
+      ['https://www.googleapis.com/auth/drive.file']
+    );
+  }
+
+  // 2. Fallback to OAuth (Expires if in Testing mode)
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
 
   if (clientId && clientSecret && refreshToken) {
+    console.log('Using Google OAuth (Client ID):', clientId.substring(0, 10) + '...'); // Debug log
     const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret);
     oAuth2Client.setCredentials({ refresh_token: refreshToken });
     return oAuth2Client;
   }
 
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = (process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || '').replace(/\\n/g, '\n');
-
-  if (!clientEmail || !privateKey) {
-    throw new Error('Google Drive credentials are not configured');
-  }
-
-  return new google.auth.JWT(
-    clientEmail,
-    undefined,
-    privateKey,
-    ['https://www.googleapis.com/auth/drive.file']
-  );
+  throw new Error('Google Drive credentials are not configured');
 };
 
 const getDriveClient = () => {
