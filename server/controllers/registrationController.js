@@ -201,7 +201,7 @@ const listRegistrationsByRegion = async (req, res) => {
 
     let query = supabase
       .from('registrations')
-      .select('id, hei_name, campus, region, first_name, middle_name, last_name, suffix, status');
+      .select('id, hei_name, campus, region, first_name, middle_name, last_name, suffix, status, username');
 
     if (region !== 'ALL') {
       query = query.eq('region', region);

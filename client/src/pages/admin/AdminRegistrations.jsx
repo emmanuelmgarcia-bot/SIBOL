@@ -405,9 +405,11 @@ const AdminRegistrations = () => {
                             <tr key={reg.id} className="hover:bg-gray-50 transition-colors">
                                 <td className="p-4">
                                     <div className="font-bold text-gray-800 text-base">{reg.name}</div>
-                                    <div className="text-xs text-indigo-500 font-mono mt-1 flex items-center gap-1">
-                                        <User size={12} /> @{reg.username}
-                                    </div>
+                                    {reg.username && (
+                                        <div className="text-xs text-indigo-500 font-mono mt-1 flex items-center gap-1">
+                                            <User size={12} /> @{reg.username}
+                                        </div>
+                                    )}
                                 </td>
                                 <td className="p-4">
                                     <div className="font-bold text-gray-700 flex items-center gap-1">
