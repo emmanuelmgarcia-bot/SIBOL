@@ -6,9 +6,6 @@ const Login = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Determine if we are on the Admin page based on URL
-  const isAdmin = location.pathname.includes('admin');
-  
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   
@@ -39,8 +36,7 @@ const Login = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             username: formData.username, 
-            password: formData.password,
-            isAdmin // Pass this so backend knows which portal to enforce
+            password: formData.password
         }),
       });
 
@@ -55,15 +51,16 @@ const Login = () => {
       localStorage.setItem('sibol_token', data.token);
       localStorage.setItem('sibol_user', JSON.stringify(data.user));
 
-      const mustChange = !!(data.user && data.user.must_change_password);
+      const mustChange = !!(data.user && (data.user.must_change_password || data.user.is_first_login));
+      const userRole = data.user.role || 'hei'; // Default to hei if not specified
 
       if (mustChange) {
-        if (isAdmin) {
+        if (userRole === 'admin' || userRole === 'superadmin') {
           navigate('/admin/account');
         } else {
           navigate('/hei/account');
         }
-      } else if (isAdmin) {
+      } else if (userRole === 'admin' || userRole === 'superadmin') {
         navigate('/admin/dashboard');
       } else {
         navigate('/hei/dashboard');
@@ -102,7 +99,7 @@ const Login = () => {
       const response = await fetch(`${apiBase}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: formData.username })
+        body: JSON.stringify({ username: formData.username }),
       });
 
       const data = await response.json();
@@ -111,9 +108,9 @@ const Login = () => {
         throw new Error(data.error || 'Failed to reset password');
       }
 
-      alert('Password has been reset to the default: CHED@1994');
+      alert(data.message);
     } catch (error) {
-      console.error('Reset Password Error:', error);
+      console.error('Forgot Password Error:', error);
       alert(error.message);
     } finally {
       setLoading(false);
@@ -121,93 +118,93 @@ const Login = () => {
   };
 
   return (
-    <AuthLayout>
-      <div className="flex flex-col items-center mb-6">
-        <img src="/portal/assets/ched-logo.png" alt="CHED Seal" className="w-16 h-16 mb-2" />
-        <h2 className="text-xl font-medium text-gray-700">
-          {isAdmin ? 'CHED Login' : 'HEI Login'}
+    <AuthLayout title="Sign In">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 text-center">
+          Unified Login Portal
         </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Enter your credentials to access the system
+        </p>
       </div>
 
-      <form onSubmit={handleLogin} className="space-y-4">
+      <form className="space-y-6" onSubmit={handleLogin}>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-          <input 
-            type="text" 
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-            placeholder={isAdmin ? "e.g. ched_region2" : "e.g. user@school.edu"}
-            required
-            disabled={loading}
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <div className="relative">
-            <input 
-              type={showPassword ? "text" : "password"}
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-              placeholder="Enter your password"
+          <label 
+            htmlFor="username" 
+            className="block text-sm font-medium text-gray-700"
+          >
+            Username
+          </label>
+          <div className="mt-1">
+            <input
+              id="username"
+              name="username"
+              type="text"
               required
-              disabled={loading}
+              value={formData.username}
+              onChange={handleChange}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+              placeholder="Enter your username"
             />
           </div>
         </div>
 
-        <div className="flex justify-between items-center text-sm">
-          <label className="flex items-center text-gray-600 cursor-pointer">
-            <input 
-              type="checkbox" 
-              className="mr-2"
-              checked={showPassword} 
-              onChange={() => setShowPassword(!showPassword)}
-            />
-            Show Password
-          </label>
-          <button
-            type="button"
-            onClick={handleForgotPassword}
-            disabled={loading}
-            className={`${
-              loading ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600'
-            }`}
+        <div>
+          <label 
+            htmlFor="password" 
+            className="block text-sm font-medium text-gray-700"
           >
-            forgot password?
-          </button>
+            Password
+          </label>
+          <div className="mt-1 relative">
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              value={formData.password}
+              onChange={handleChange}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+              placeholder="Enter your password"
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
         </div>
 
-        <button 
+        <div className="flex items-center justify-between">
+          <div className="text-sm">
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="font-medium text-green-600 hover:text-green-500 focus:outline-none focus:underline transition ease-in-out duration-150"
+            >
+              Forgot your password?
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <button
+            type="submit"
             disabled={loading}
-            className={`w-full text-white py-2.5 rounded-md font-bold transition-colors ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
-
-      <div className="mt-4 space-y-3">
-        {/* If HEI Login, show Register Button */}
-        {!isAdmin && (
-          <Link 
-            to="/register"
-            className={`block w-full text-center bg-green-600 text-white py-2.5 rounded-md font-bold hover:bg-green-700 transition-colors ${loading ? 'pointer-events-none opacity-50' : ''}`}
+            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+              loading ? 'bg-green-400' : 'bg-green-600 hover:bg-green-700'
+            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out`}
           >
-            Register New Account
-          </Link>
-        )}
-
-        {/* Toggle between Admin and HEI Login */}
-        <Link 
-          to={isAdmin ? "/login" : "/login/admin"}
-          className={`block w-full text-center border border-blue-600 text-blue-600 py-2.5 rounded-md font-bold hover:bg-blue-50 transition-colors ${loading ? 'pointer-events-none opacity-50' : ''}`}
-        >
-          {isAdmin ? "Switch to HEI Portal" : "Switch to Admin Portal"}
-        </Link>
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
+        </div>
+      </form>
+      
+      <div className="mt-6 text-center text-xs text-gray-500">
+        <p>Protected by reCAPTCHA and subject to the Privacy Policy and Terms of Service.</p>
       </div>
     </AuthLayout>
   );
