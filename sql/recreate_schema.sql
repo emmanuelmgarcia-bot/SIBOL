@@ -29,14 +29,8 @@ create table public.heis (
 );
 alter table public.heis enable row level security;
 
--- RLS Policies for HEIs
-create policy "Enable read access for all users" on public.heis for select using (true);
-create policy "Enable insert/update/delete for admins only" on public.heis for all using (
-  exists (
-    select 1 from public.profiles
-    where profiles.id = auth.uid() and profiles.role = 'admin'
-  )
-);
+-- RLS Policies for HEIs moved after profiles table creation
+
 
 -- Profiles Table (Users/Admins)
 create table public.profiles (
@@ -50,6 +44,15 @@ create table public.profiles (
   created_at timestamptz default now()
 );
 alter table public.profiles enable row level security;
+
+-- RLS Policies for HEIs (Must be created after profiles table)
+create policy "Enable read access for all users" on public.heis for select using (true);
+create policy "Enable insert/update/delete for admins only" on public.heis for all using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  )
+);
 
 -- RLS Policies for Profiles
 create policy "Users can view own profile" on public.profiles for select using (auth.uid() = id);

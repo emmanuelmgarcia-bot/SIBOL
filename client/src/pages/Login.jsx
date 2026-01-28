@@ -32,15 +32,15 @@ const Login = () => {
       const apiBase =
         window.location.hostname === 'localhost'
           ? 'http://localhost:5000'
-          : '';
+          : import.meta.env.VITE_API_URL || '';
 
       const response = await fetch(`${apiBase}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             username: formData.username, 
-            password: formData.password,
-            isAdmin // Pass this so backend knows which portal to enforce
+            password: formData.password
+            // isAdmin removed: consolidated login
         }),
       });
 
@@ -56,14 +56,18 @@ const Login = () => {
       localStorage.setItem('sibol_user', JSON.stringify(data.user));
 
       const mustChange = !!(data.user && data.user.must_change_password);
+      
+      // Check role to determine dashboard
+      const userRole = data.user.role || '';
+      const isUserAdmin = userRole === 'admin' || userRole === 'superadmin';
 
       if (mustChange) {
-        if (isAdmin) {
+        if (isUserAdmin) {
           navigate('/admin/account');
         } else {
           navigate('/hei/account');
         }
-      } else if (isAdmin) {
+      } else if (isUserAdmin) {
         navigate('/admin/dashboard');
       } else {
         navigate('/hei/dashboard');
@@ -125,7 +129,7 @@ const Login = () => {
       <div className="flex flex-col items-center mb-6">
         <img src="/assets/ched-logo.png" alt="CHED Seal" className="w-16 h-16 mb-2" />
         <h2 className="text-xl font-medium text-gray-700">
-          {isAdmin ? 'CHED Login' : 'HEI Login'}
+          Sign in to SIBOL
         </h2>
       </div>
 
@@ -138,7 +142,7 @@ const Login = () => {
             value={formData.username}
             onChange={handleChange}
             className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-            placeholder={isAdmin ? "e.g. ched_region2" : "e.g. user@school.edu"}
+            placeholder="Enter your username"
             required
             disabled={loading}
           />
@@ -191,22 +195,12 @@ const Login = () => {
       </form>
 
       <div className="mt-4 space-y-3">
-        {/* If HEI Login, show Register Button */}
-        {!isAdmin && (
-          <Link 
-            to="/register"
-            className={`block w-full text-center bg-green-600 text-white py-2.5 rounded-md font-bold hover:bg-green-700 transition-colors ${loading ? 'pointer-events-none opacity-50' : ''}`}
-          >
-            Register New Account
-          </Link>
-        )}
-
-        {/* Toggle between Admin and HEI Login */}
+        {/* Register Button */}
         <Link 
-          to={isAdmin ? "/login" : "/login/admin"}
-          className={`block w-full text-center border border-blue-600 text-blue-600 py-2.5 rounded-md font-bold hover:bg-blue-50 transition-colors ${loading ? 'pointer-events-none opacity-50' : ''}`}
+          to="/register"
+          className={`block w-full text-center bg-green-600 text-white py-2.5 rounded-md font-bold hover:bg-green-700 transition-colors ${loading ? 'pointer-events-none opacity-50' : ''}`}
         >
-          {isAdmin ? "Switch to HEI Portal" : "Switch to Admin Portal"}
+            Register New Account
         </Link>
       </div>
     </AuthLayout>
