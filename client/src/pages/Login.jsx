@@ -24,7 +24,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      console.log("Sending login request...", formData);
+      // console.log("Sending login request...", formData);
 
       const apiBase =
         window.location.hostname === 'localhost'
@@ -46,7 +46,7 @@ const Login = () => {
         throw new Error(data.error || 'Login failed');
       }
 
-      console.log("Login Successful:", data.user);
+      // console.log("Login Successful:", data.user);
 
       localStorage.setItem('sibol_token', data.token);
       localStorage.setItem('sibol_user', JSON.stringify(data.user));
@@ -119,13 +119,18 @@ const Login = () => {
 
   return (
     <AuthLayout title="Sign In">
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col items-center">
+        <img 
+          src="/portal/assets/ched-logo.png" 
+          alt="CHED Logo" 
+          className="h-20 w-auto mb-4"
+        />
         <h2 className="text-2xl font-bold text-gray-900 text-center">
-          Unified Login Portal
+          SIBOL Portal Login
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
+        {/* <p className="mt-2 text-center text-sm text-gray-600">
           Enter your credentials to access the system
-        </p>
+        </p> */}
       </div>
 
       <form className="space-y-6" onSubmit={handleLogin}>
@@ -144,8 +149,8 @@ const Login = () => {
               required
               value={formData.username}
               onChange={handleChange}
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-              placeholder="Enter your username"
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="username"
             />
           </div>
         </div>
@@ -165,7 +170,7 @@ const Login = () => {
               required
               value={formData.password}
               onChange={handleChange}
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               placeholder="Enter your password"
             />
             <button
@@ -178,12 +183,12 @@ const Login = () => {
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-end">
           <div className="text-sm">
             <button
               type="button"
               onClick={handleForgotPassword}
-              className="font-medium text-green-600 hover:text-green-500 focus:outline-none focus:underline transition ease-in-out duration-150"
+              className="font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:underline transition ease-in-out duration-150"
             >
               Forgot your password?
             </button>
@@ -194,12 +199,21 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-              loading ? 'bg-green-400' : 'bg-green-600 hover:bg-green-700'
-            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out`}
+            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white ${
+              loading ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out`}
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Signing in...' : 'Login'}
           </button>
+        </div>
+
+        <div className="mt-4">
+          <Link 
+            to="/register" 
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out"
+          >
+            Register New Account
+          </Link>
         </div>
       </form>
       

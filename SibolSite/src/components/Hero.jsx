@@ -3,8 +3,12 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
 const Hero = () => {
-  const { heroSlides } = useData();
+  const { heroSlides, loading } = useData();
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  if (loading) {
+    return <div className="w-full h-[500px] bg-gray-200 flex items-center justify-center animate-pulse">Loading...</div>;
+  }
 
   if (!heroSlides || heroSlides.length === 0) {
       return <div className="w-full h-[500px] bg-gray-200 flex items-center justify-center">No images available</div>;
