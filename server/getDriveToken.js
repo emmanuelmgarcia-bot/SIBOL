@@ -2,19 +2,19 @@ const { google } = require('googleapis');
 const readline = require('readline');
 require('dotenv').config();
 
-const CLIENT_ID = '88262753746-7q3ht0124olt210qqa4gook043g14v63.apps.googleusercontent.com';
-const CLIENT_SECRET = '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';
-const REDIRECT_URI = 'http://localhost:3000/oauth2callback';
+const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI || 'http://localhost:3000/oauth2callback';
 
-if (!CLIENT_ID || !CLIENT_SECRET) {
+if (!clientId || !clientSecret) {
   console.error('Missing GOOGLE_OAUTH_CLIENT_ID or GOOGLE_OAUTH_CLIENT_SECRET in .env');
   process.exit(1);
 }
 
 const oAuth2Client = new google.auth.OAuth2(
-  CLIENT_ID,
-  CLIENT_SECRET,
-  REDIRECT_URI
+  clientId,
+  clientSecret,
+  redirectUri
 );
 
 const authUrl = oAuth2Client.generateAuthUrl({
@@ -39,7 +39,7 @@ rl.question('Enter the code from that page here: ', async (code) => {
     console.log('Refresh token:', tokens.refresh_token || '(none)');
     if (!tokens.refresh_token) {
       console.log('\nNo refresh token was returned. Ensure:');
-      console.log('- This OAuth client has redirect URI set to ' + REDIRECT_URI);
+      console.log('- This OAuth client has redirect URI set to ' + redirectUri);
       console.log('- You used access_type=offline and prompt=consent (already in this script).');
       console.log('- You removed any previous access for this app from your Google Account security settings and tried again.');
     }

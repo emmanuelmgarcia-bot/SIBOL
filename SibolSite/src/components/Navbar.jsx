@@ -58,7 +58,7 @@ const Navbar = () => {
 
         {/* Desktop Navigation Links */}
         <div className="hidden lg:flex items-center space-x-6 text-sm font-medium text-green-800">
-          <button onClick={() => navigate('/admin')} className="hover:text-green-600">Login</button>
+          <a href="/portal/login" className="hover:text-green-600">Login</a>
           
           {/* Peace Education Dropdown */}
           <div 
@@ -110,7 +110,7 @@ const Navbar = () => {
       {/* Mobile Navigation Menu */}
       {isMobileMenuOpen && (
         <div className="lg:hidden bg-white border-t border-gray-100 py-4 px-4 flex flex-col space-y-4 shadow-lg max-h-[80vh] overflow-y-auto">
-          <button onClick={() => { navigate('/admin'); setIsMobileMenuOpen(false); }} className="text-left text-green-800 font-medium hover:text-green-600">Login</button>
+          <a href="/portal/login" className="text-left text-green-800 font-medium hover:text-green-600">Login</a>
           
           {/* Mobile Peace Education */}
           <div className="space-y-2">

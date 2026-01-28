@@ -9,11 +9,9 @@ const loginUser = async (req, res) => {
   }
 
   try {
-    // 1. Try Login as Admin (public.profiles)
-    let adminProfile = null;
-    let adminError = null;
+    if (isAdmin) {
+      console.log(`[Auth] Checking public.profiles for admin: ${username}`);
 
-    try {
       const { data, error } = await supabase.rpc('login_profile', {
         p_username: username,
         p_password: password
@@ -21,44 +19,35 @@ const loginUser = async (req, res) => {
 
       if (error) {
         console.error('Supabase login_profile error:', error.message);
-        // Don't fail immediately, try HEI login unless it's a critical error?
-        // Actually, if login_profile fails, it might just be wrong creds, which returns empty data usually.
-        // But rpc might return error if function logic fails.
-      } else if (data && data.length > 0) {
-        adminProfile = data[0];
+        return res.status(500).json({ error: 'Server error during login: ' + error.message });
       }
-    } catch (err) {
-      console.error('Admin login attempt exception:', err.message);
-    }
 
-    if (adminProfile) {
-      console.log('Admin user found:', adminProfile.username);
+      if (!data || data.length === 0) {
+        console.log('Invalid admin username or password for:', username);
+        return res.status(401).json({ error: 'Invalid username or password' });
+      }
 
-      // Even though we found a profile, we should enforce role check if needed,
-      // but the prompt implies consolidated login.
-      // Assuming profiles table is strictly for CHED Admins/Staff.
+      const profile = data[0];
+      console.log('Admin user found:', profile.username);
+
+      if (profile.role !== 'admin' && profile.role !== 'superadmin') {
+        return res.status(403).json({ error: 'Access Denied: Not an Admin.' });
+      }
 
       return res.status(200).json({
         message: 'Login successful',
         token: 'mock-token',
         user: {
-          id: adminProfile.id,
-          username: adminProfile.username,
-          role: adminProfile.role,
-          assigned_region: adminProfile.assigned_region,
-          hei_id: adminProfile.hei_id,
-          must_change_password: adminProfile.must_change_password
+          id: profile.id,
+          username: profile.username,
+          role: profile.role,
+          assigned_region: profile.assigned_region,
+          hei_id: profile.hei_id,
+          must_change_password: profile.must_change_password
         }
       });
     }
 
-    // 2. If not Admin, Try Login as HEI (public.registrations)
-    // Note: If the user explicitly requested "isAdmin: true", the previous logic would fail if not found.
-    // But since we want consolidated, we ignore the isAdmin flag or treat it as a hint, 
-    // but ultimately fall back to checking both if the first fails?
-    // Actually, the safest unified approach is to check one, then the other.
-
-    // Check registrations table
     const { data: regRows, error: regError } = await supabase
       .from('registrations')
       .select('id, hei_name, campus, region, province, city, barangay, address_line1, address_line2, zip_code, username, password_hash, is_first_login')
@@ -68,22 +57,24 @@ const loginUser = async (req, res) => {
 
     if (regError) {
       console.error('Supabase registrations login error:', regError.message);
-      return res.status(500).json({ error: 'Server error during login' });
+      return res.status(500).json({ error: 'Server error during login: ' + regError.message });
     }
 
     if (!regRows || regRows.length === 0) {
-      // Neither Admin nor HEI found
+      console.log('No approved registration found for username:', username);
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
     const reg = regRows[0];
 
     if (!reg.password_hash) {
+      console.log('Missing password hash for registration username:', username);
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
     const passwordOk = await bcrypt.compare(password, reg.password_hash);
     if (!passwordOk) {
+      console.log('Invalid password for registration username:', username);
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 

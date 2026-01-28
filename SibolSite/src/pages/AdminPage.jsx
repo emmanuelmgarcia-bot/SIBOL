@@ -1,17 +1,30 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { Trash2, Plus, Upload, X } from 'lucide-react';
-import Navbar from '../components/Navbar'; // Reusing navbar for consistency, though admin pages usually have sidebars.
+import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 const AdminPage = () => {
   const {
     heroSlides, addHeroSlide, removeHeroSlide,
     newsItems, addNewsItem, updateNewsItem, removeNewsItem,
-    eventItems, addEventItem, updateEventItem, removeEventItem
+    eventItems, addEventItem, updateEventItem, removeEventItem,
+    saveWebsiteContent, saving, saveError
   } = useData();
 
   const [activeTab, setActiveTab] = useState('hero');
+  const [saveMessage, setSaveMessage] = useState('');
+
+  const handleSave = async () => {
+    try {
+      await saveWebsiteContent();
+      setSaveMessage('Changes saved');
+      setTimeout(() => {
+        setSaveMessage('');
+      }, 3000);
+    } catch {
+    }
+  };
 
   // Helper for file upload simulation
   const handleFileUpload = (e, callback) => {
@@ -29,7 +42,29 @@ const AdminPage = () => {
     <div className="min-h-screen flex flex-col bg-gray-100 pt-20">
         <Navbar />
         <div className="container mx-auto px-4 py-8 flex-grow">
-            <h1 className="text-3xl font-bold mb-6 text-green-900">Admin Dashboard</h1>
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-3xl font-bold text-green-900">Admin Dashboard</h1>
+                <div className="flex items-center gap-3">
+                    {saveMessage && (
+                        <span className="text-sm text-green-700">
+                            {saveMessage}
+                        </span>
+                    )}
+                    {saveError && (
+                        <span className="text-sm text-red-600 max-w-xs">
+                            {saveError}
+                        </span>
+                    )}
+                    <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        {saving ? 'Saving...' : 'Save changes'}
+                    </button>
+                </div>
+            </div>
             
             {/* Tabs */}
             <div className="flex space-x-4 mb-8 border-b border-gray-300">

@@ -70,7 +70,7 @@ const HEILayout = ({ children }) => {
           {/* White Circle Container */}
           <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden p-1 shrink-0">
              <img 
-                src="/assets/ched-logo.png" 
+                src="/portal/assets/ched-logo.png" 
                 alt="CHED Logo" 
                 className="w-full h-full object-contain"
              />

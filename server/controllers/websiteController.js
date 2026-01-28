@@ -61,50 +61,8 @@ const saveWebsiteContent = async (req, res) => {
   }
 };
 
-const getWebsiteStats = async (req, res) => {
-  try {
-    // 1. Count HEIs
-    const { count: heiCount, error: heiError } = await supabase
-      .from('heis')
-      .select('*', { count: 'exact', head: true });
-    
-    if (heiError) {
-      console.error('Stats: HEI count error:', heiError.message);
-    }
-
-    // 2. Count Faculty
-    const { count: facultyCount, error: facultyError } = await supabase
-      .from('faculty')
-      .select('*', { count: 'exact', head: true });
-
-    if (facultyError) {
-      console.error('Stats: Faculty count error:', facultyError.message);
-    }
-
-    // 3. Count Subjects (IP Subjects)
-    const { count: subjectCount, error: subjectError } = await supabase
-      .from('subjects')
-      .select('*', { count: 'exact', head: true });
-
-    if (subjectError) {
-      console.error('Stats: Subject count error:', subjectError.message);
-    }
-
-    return res.status(200).json({
-      heiCount: heiCount || 0,
-      ipFacultyCount: facultyCount || 0,
-      ipSubjectCount: subjectCount || 0
-    });
-
-  } catch (err) {
-    console.error('Get website stats exception:', err.message);
-    return res.status(500).json({ error: 'Server error: ' + err.message });
-  }
-};
-
 module.exports = {
   getWebsiteContent,
-  saveWebsiteContent,
-  getWebsiteStats
+  saveWebsiteContent
 };
 
