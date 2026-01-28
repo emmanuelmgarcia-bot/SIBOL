@@ -230,7 +230,8 @@ create table public.faculty (
   hei_id uuid references public.heis(id) on delete cascade,
   campus text,
   name text,
-  rank text,
+  status text,
+  education text,
   created_at timestamptz default now()
 );
 alter table public.faculty enable row level security;

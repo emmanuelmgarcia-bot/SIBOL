@@ -124,16 +124,7 @@ const loginUser = async (req, res) => {
       }
 
       if (!heiId) {
-        const { data: heiRowsIlike, error: heiIlikeError } = await supabase
-          .from('heis')
-          .select('id')
-          .ilike('name', heiName)
-          .limit(1);
-        if (heiIlikeError) {
-          console.error('Supabase ilike HEI fetch during login error:', heiIlikeError.message);
-        } else if (heiRowsIlike && heiRowsIlike.length > 0) {
-          heiId = heiRowsIlike[0].id;
-        }
+         // Removed loose fallback to prevent merging different campuses
       }
 
       if (!heiId) {

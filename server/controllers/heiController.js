@@ -871,17 +871,35 @@ const deleteProgramRequest = async (req, res) => {
 
 const getFaculty = async (req, res) => {
   try {
-    const { heiId, campus } = req.query;
-
-    if (!heiId) {
-      return res.status(400).json({ error: 'heiId is required' });
-    }
+    const { heiId, campus, region } = req.query;
 
     let query = supabase
       .from('faculty')
       .select('*')
-      .eq('hei_id', heiId)
       .order('name', { ascending: true });
+
+    if (heiId) {
+      query = query.eq('hei_id', heiId);
+    } else if (region) {
+       // CHED Region access: Fetch all HEIs in the region first
+       const { data: heisData, error: heisError } = await supabase
+        .from('heis')
+        .select('id')
+        .eq('region_destination', region);
+
+      if (heisError) {
+        console.error('Supabase heis for faculty error:', heisError.message);
+        return res.status(500).json({ error: 'Failed to load HEIs for faculty: ' + heisError.message });
+      }
+
+      const heiIds = (heisData || []).map(h => h.id);
+      if (heiIds.length === 0) {
+        return res.status(200).json([]);
+      }
+      query = query.in('hei_id', heiIds);
+    } else {
+      return res.status(400).json({ error: 'heiId or region is required' });
+    }
 
     if (campus) {
       query = query.eq('campus', campus);

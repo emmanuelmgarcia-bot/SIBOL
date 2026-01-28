@@ -14,6 +14,7 @@ const Form1 = () => {
   const [programOptions, setProgramOptions] = useState([]);
   const [facultyOptions, setFacultyOptions] = useState([]);
   const [facultyEducation, setFacultyEducation] = useState({});
+  const [facultyStatus, setFacultyStatus] = useState({});
 
   const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
 
@@ -59,10 +60,13 @@ const Form1 = () => {
         if (facultyRes.ok && Array.isArray(facultyData)) {
           setFacultyOptions(facultyData.map(f => f.name));
           const eduMap = {};
+          const statusMap = {};
           facultyData.forEach(f => {
             eduMap[f.name] = f.education;
+            statusMap[f.name] = f.status;
           });
           setFacultyEducation(eduMap);
+          setFacultyStatus(statusMap);
         }
       } catch (err) {
         console.error('Error loading form 1 options:', err);
@@ -75,14 +79,16 @@ const Form1 = () => {
   const addRowA = () => {
     if (!inputA.subject || !inputA.faculty || !inputA.program) return;
     const education = facultyEducation[inputA.faculty] || '';
-    setRowsA([...rowsA, { id: Date.now(), ...inputA, units: 3, status: 'Permanent', education }]);
+    const status = facultyStatus[inputA.faculty] || 'Permanent';
+    setRowsA([...rowsA, { id: Date.now(), ...inputA, units: 3, status, education }]);
     setInputA({ subject: '', program: '', faculty: '' });
   };
 
   const addRowB = () => {
     if (!inputB.subject || !inputB.faculty || !inputB.program) return;
     const education = facultyEducation[inputB.faculty] || '';
-    setRowsB([...rowsB, { id: Date.now(), ...inputB, units: 3, status: 'Contractual', education }]);
+    const status = facultyStatus[inputB.faculty] || 'Contractual';
+    setRowsB([...rowsB, { id: Date.now(), ...inputB, units: 3, status, education }]);
     setInputB({ subject: '', program: '', faculty: '' });
   };
 

@@ -84,7 +84,8 @@ const Form2 = () => {
   const addRowA = () => {
     if (!inputA.subject || !inputA.faculty) return;
     const education = facultyEducation[inputA.faculty] || '';
-    setRowsA([...rowsA, { id: Date.now(), ...inputA, units: 3, status: 'Permanent', education }]);
+    const status = facultyStatus[inputA.faculty] || 'Permanent';
+    setRowsA([...rowsA, { id: Date.now(), ...inputA, units: 3, status, education }]);
     setInputA({ subject: '', program: '', faculty: '' });
   };
 

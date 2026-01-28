@@ -70,16 +70,12 @@ const createHeiFromRegistration = async (req, res) => {
     }
 
     if (!heiId) {
-      const { data: heiIlikeRows, error: heiIlikeError } = await supabase
-        .from('heis')
-        .select('id')
-        .ilike('name', heiName)
-        .limit(1);
-      if (heiIlikeError) {
-        console.error('Ilike HEI fetch for manual create error:', heiIlikeError.message);
-      } else if (heiIlikeRows && heiIlikeRows.length > 0) {
-        heiId = heiIlikeRows[0].id;
-      }
+      // STRICT MATCH ONLY: Do not fallback to ilike name only if campus is involved.
+      // If we are creating a specific campus, we should not merge with a different campus or the main HEI.
+      // However, if the registration has NO campus, maybe we can fallback? 
+      // Safer to just remove the loose fallback to prevent merging distinct campuses.
+      
+      // Removed loose fallback to prevent cross-campus merging
     }
 
     if (!heiId) {
