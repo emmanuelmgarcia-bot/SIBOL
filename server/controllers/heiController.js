@@ -378,11 +378,6 @@ const deleteSubmission = async (req, res) => {
       return res.status(400).json({ error: 'Submission id and heiId are required' });
     }
 
-    const parsedHeiId = parseInt(heiId, 10);
-    if (Number.isNaN(parsedHeiId)) {
-      return res.status(400).json({ error: 'Invalid heiId value' });
-    }
-
     const { data: submissionRow, error: fetchError } = await supabase
       .from('submissions')
       .select('id, hei_id')
@@ -398,7 +393,7 @@ const deleteSubmission = async (req, res) => {
       return res.status(404).json({ error: 'Submission not found' });
     }
 
-    if (submissionRow.hei_id !== parsedHeiId) {
+    if (submissionRow.hei_id !== heiId) {
       return res.status(403).json({ error: 'Not allowed to delete submission for another HEI' });
     }
 
@@ -594,11 +589,8 @@ const listProgramRequests = async (req, res) => {
     const { region, heiId, campus, status } = req.query;
 
     let cleanedHeiId = null;
-    if (heiId && heiId !== 'undefined') {
-      const parsed = parseInt(heiId, 10);
-      if (!Number.isNaN(parsed)) {
-        cleanedHeiId = parsed;
-      }
+    if (heiId && heiId !== 'undefined' && heiId !== 'null') {
+      cleanedHeiId = heiId;
     }
 
     let query = supabase
@@ -1119,11 +1111,8 @@ const getSubjects = async (req, res) => {
     const { heiId, campus, region, status } = req.query;
 
     let cleanedHeiId = null;
-    if (heiId && heiId !== 'undefined') {
-      const parsed = parseInt(heiId, 10);
-      if (!Number.isNaN(parsed)) {
-        cleanedHeiId = parsed;
-      }
+    if (heiId && heiId !== 'undefined' && heiId !== 'null') {
+      cleanedHeiId = heiId;
     }
 
     let query = supabase

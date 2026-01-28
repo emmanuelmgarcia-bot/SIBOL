@@ -228,6 +228,7 @@ create policy "Admins can manage website content" on public.website_content for 
 create table public.faculty (
   id uuid default gen_random_uuid() primary key,
   hei_id uuid references public.heis(id) on delete cascade,
+  campus text,
   name text,
   rank text,
   created_at timestamptz default now()
