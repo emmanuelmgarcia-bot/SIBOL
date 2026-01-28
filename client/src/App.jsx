@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { WebsiteProvider } from './context/WebsiteContext';
+import Home from './pages/Home';
 
 // Layouts
 import HEILayout from './components/HEILayout';
@@ -27,73 +29,63 @@ import AdminSubmissions from './pages/admin/AdminSubmissions';
 import AdminRegistrations from './pages/admin/AdminRegistrations';
 import AdminAccount from './pages/admin/AdminAccount';
 
-const externalHomepage = import.meta.env.VITE_SIBOL_SITE_URL;
-
-const RootRoute = () => {
-  const target = externalHomepage && externalHomepage.trim();
-  if (target) {
-    window.location.href = target.replace(/\/$/, '');
-    return null;
-  }
-  return <Navigate to="/login" replace />;
-};
-
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* ================= PUBLIC ROUTES ================= */}
-        <Route path="/" element={<RootRoute />} />
-        
-        {/* Login Page (Handles both HEI and Admin login via internal logic) */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/login/admin" element={<Login />} />
-        
-        {/* Registration Page */}
-        <Route path="/register" element={<Register />} />
+    <WebsiteProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* ================= PUBLIC ROUTES ================= */}
+          <Route path="/" element={<Home />} />
+          
+          {/* Login Page (Handles both HEI and Admin login via internal logic) */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/login/admin" element={<Login />} />
+          
+          {/* Registration Page */}
+          <Route path="/register" element={<Register />} />
 
 
-        {/* ================= HEI PORTAL ROUTES ================= */}
-        {/* All routes starting with /hei are wrapped in the HEI Sidebar Layout */}
-        <Route path="/hei/*" element={
-          <HEILayout>
-            <Routes>
-              {/* Dashboard */}
-              <Route path="dashboard" element={<HEIDashboard />} />
-              
-              {/* Management Tabs */}
-              <Route path="faculty" element={<FacultyManager />} />
-              <Route path="subjects" element={<SubjectManager />} />
-              <Route path="programs" element={<ProgramManager />} /> 
-              
-              {/* Submission Forms */}
-              <Route path="form1" element={<Form1 />} />
-              <Route path="form2" element={<Form2 />} />
-              
-              {/* History & Status */}
-              <Route path="submissions" element={<HEISubmissions />} />
-              <Route path="account" element={<HEIAccount />} />
-            </Routes>
-          </HEILayout>
-        } />
+          {/* ================= HEI PORTAL ROUTES ================= */}
+          {/* All routes starting with /hei are wrapped in the HEI Sidebar Layout */}
+          <Route path="/hei/*" element={
+            <HEILayout>
+              <Routes>
+                {/* Dashboard */}
+                <Route path="dashboard" element={<HEIDashboard />} />
+                
+                {/* Management Tabs */}
+                <Route path="faculty" element={<FacultyManager />} />
+                <Route path="subjects" element={<SubjectManager />} />
+                <Route path="programs" element={<ProgramManager />} /> 
+                
+                {/* Submission Forms */}
+                <Route path="form1" element={<Form1 />} />
+                <Route path="form2" element={<Form2 />} />
+                
+                {/* History & Status */}
+                <Route path="submissions" element={<HEISubmissions />} />
+                <Route path="account" element={<HEIAccount />} />
+              </Routes>
+            </HEILayout>
+          } />
 
 
-        {/* ================= ADMIN PORTAL ROUTES ================= */}
-        {/* All routes starting with /admin are wrapped in the Admin Sidebar Layout */}
-        <Route path="/admin/*" element={
-          <AdminLayout>
-            <Routes>
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="subjects" element={<AdminSubjects />} />
-              <Route path="programs" element={<AdminPrograms />} />
-              <Route path="submissions" element={<AdminSubmissions />} />
-              <Route path="registrations" element={<AdminRegistrations />} />
-              <Route path="account" element={<AdminAccount />} />
-            </Routes>
-          </AdminLayout>
-        } />
-      </Routes>
-    </BrowserRouter>
+          {/* ================= ADMIN PORTAL ROUTES ================= */}
+          {/* All routes starting with /admin are wrapped in the Admin Sidebar Layout */}
+          <Route path="/admin/*" element={
+            <AdminLayout>
+              <Routes>
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="subjects" element={<AdminSubjects />} />
+                <Route path="programs" element={<AdminPrograms />} />
+                <Route path="submissions" element={<AdminSubmissions />} />
+                <Route path="registrations" element={<AdminRegistrations />} />
+                <Route path="account" element={<AdminAccount />} />
+              </Routes>
+            </AdminLayout>
+          } />
+        </Routes>
+      </BrowserRouter>
     </WebsiteProvider>
   );
 }
