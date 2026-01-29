@@ -26,7 +26,7 @@ const AdminSubjects = () => {
 
     const fetchSubjects = async () => {
       setLoadingSubjects(true);
-      const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
       const userRaw = localStorage.getItem('sibol_user');
       const user = userRaw ? JSON.parse(userRaw) : null;
       const region = user?.assigned_region;

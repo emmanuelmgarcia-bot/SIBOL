@@ -26,10 +26,7 @@ const HEIDashboard = () => {
           return;
         }
 
-        const apiBase =
-          window.location.hostname === 'localhost'
-            ? 'http://localhost:5000'
-            : '';
+        const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
         const [heisRes, subjectsRes, facultyRes, programsRes] = await Promise.all([
           fetch(`${apiBase}/api/heis`),

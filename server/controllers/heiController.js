@@ -91,7 +91,7 @@ const uploadSubmission = async (req, res) => {
       }
 
       if (heiMeta) {
-        const nameValue = `Name of HEI: ${heiMeta.name || ''}`;
+        const nameValue = `Name of HEI: ${heiMeta.name || ''} - ${campus || ''}`;
         const regionValue = `Region: ${heiMeta.region_destination || ''}`;
         const addressValue = `Address: ${heiMeta.address || ''}`;
 
@@ -197,7 +197,7 @@ const uploadSubmission = async (req, res) => {
         const startRowPrograms = 37;
         programs.forEach((row, index) => {
           const excelRow = sheet.getRow(startRowPrograms + index);
-          excelRow.getCell('A').value = row.subject || '';
+          excelRow.getCell('A').value = row.subject || ''; // In Form 2, this is the Program/Area of Specialization
           excelRow.getCell('C').value = row.govtAuthority || row.govt_authority || '';
           excelRow.getCell('D').value = row.ayStarted || row.ay_started || '';
           excelRow.getCell('E').value = row.studentsAy1 || row.students_ay1 || '';

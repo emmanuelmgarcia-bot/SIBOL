@@ -11,18 +11,23 @@ const Stats = () => {
     // Fetch stats from the backend
     const fetchStats = async () => {
       try {
-        const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+        console.log('Fetching stats from (client):', `${apiBase}/api/website/stats`);
+
         const res = await fetch(`${apiBase}/api/website/stats`);
         if (res.ok) {
           const data = await res.json();
+          console.log('Stats data received (client):', data);
           setStatsData({
             heiCount: data.heiCount || 0,
             facultyCount: data.facultyCount || 0,
             ipSubjectCount: data.ipSubjectCount || 0
           });
+        } else {
+             console.error('Stats response not OK (client):', res.statusText);
         }
       } catch (err) {
-        console.error('Failed to fetch stats:', err);
+        console.error('Failed to fetch stats (client):', err);
       }
     };
 

@@ -11,7 +11,7 @@ const AdminPrograms = () => {
   const [newProgram, setNewProgram] = useState({ code: '', title: '' });
   const [masterSearch, setMasterSearch] = useState(''); // NEW: Search State
 
-  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
   useEffect(() => {
     fetch(`${apiBase}/api/heis/programs/master`)

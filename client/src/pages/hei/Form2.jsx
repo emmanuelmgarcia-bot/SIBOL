@@ -9,10 +9,15 @@ const Form2 = () => {
   const [inputA, setInputA] = useState({ subject: '', program: '', faculty: '' });
   const [inputB, setInputB] = useState({ subject: '', program: '', faculty: '' });
   
-  // Section C Inputs (Reduced to just Subject & Faculty)
+  // Section C Inputs (Expanded)
   const [inputC, setInputC] = useState({ 
     subject: '', // This will act as the "Program/Area of Specialization"
-    faculty: ''
+    faculty: '',
+    govtAuthority: '',
+    ayStarted: '',
+    studentsAy1: '',
+    studentsAy2: '',
+    studentsAy3: ''
   });
 
   const [integratedSubjects, setIntegratedSubjects] = useState([]);
@@ -22,7 +27,7 @@ const Form2 = () => {
   const [facultyOptions, setFacultyOptions] = useState([]);
   const [facultyEducation, setFacultyEducation] = useState({});
 
-  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
   const getHeiInfo = () => {
     const userRaw = localStorage.getItem('sibol_user');
@@ -97,25 +102,31 @@ const Form2 = () => {
   };
 
   const addRowC = () => {
-    // Basic validation (Only Subject/Specialization & Faculty required now)
-    if (!inputC.subject || !inputC.faculty) return;
+    // Basic validation
+    if (!inputC.subject || !inputC.faculty) {
+        alert("Please select a Program/Specialization and Faculty.");
+        return;
+    }
 
     const education = facultyEducation[inputC.faculty] || '';
 
     setRowsC([...rowsC, { 
       id: Date.now(), 
       ...inputC, 
-      govtAuthority: '-', 
-      ayStarted: '-', 
-      studentsAy1: '-', 
-      studentsAy2: '-', 
-      studentsAy3: '-',
       status: 'Permanent', 
       education     
     }]);
 
     // Reset form
-    setInputC({ subject: '', faculty: '' });
+    setInputC({ 
+        subject: '', 
+        faculty: '',
+        govtAuthority: '',
+        ayStarted: '',
+        studentsAy1: '',
+        studentsAy2: '',
+        studentsAy3: ''
+    });
   };
 
   const handleSubmit = async () => {
@@ -135,10 +146,7 @@ const Form2 = () => {
       const userRaw = localStorage.getItem('sibol_user');
       const user = userRaw ? JSON.parse(userRaw) : null;
       const heiId = user && user.hei_id ? user.hei_id : null;
-      const apiBase =
-        window.location.hostname === 'localhost'
-          ? 'http://localhost:5000'
-          : '';
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
       const response = await fetch(`${apiBase}/api/heis/submissions`, {
         method: 'POST',
         headers: {
@@ -306,27 +314,81 @@ const Form2 = () => {
             C. Degree Program/Area of Specialization
         </h2>
         
-       {/* Input Bar C */}
-        <div className="flex flex-wrap gap-4 mb-4 bg-red-50 p-5 rounded-lg border border-red-100 items-end">
-            <div className="flex-1 min-w-[200px]">
-                {/* RENAMED LABEL */}
-                <label className="text-xs font-bold text-red-800 uppercase mb-1 block">Program/Area of Specialization</label>
-                <select className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-red-500" value={inputC.subject} onChange={e => setInputC({...inputC, subject: e.target.value})}>
-                    <option value="">Select Specialization...</option>
-                    {specializationSubjects.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+        {/* Input Bar C */}
+        <div className="bg-red-50 p-5 rounded-lg border border-red-100 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div className="lg:col-span-2">
+                    <label className="text-xs font-bold text-red-800 uppercase mb-1 block">Program/Area of Specialization</label>
+                    <select className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-red-500" value={inputC.subject} onChange={e => setInputC({...inputC, subject: e.target.value})}>
+                        <option value="">Select Specialization...</option>
+                        {specializationSubjects.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-red-800 uppercase mb-1 block">Govt Authority (No. & Date)</label>
+                    <input 
+                        type="text" 
+                        className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-red-500"
+                        placeholder="e.g. GR No. 123 s. 2020"
+                        value={inputC.govtAuthority} 
+                        onChange={e => setInputC({...inputC, govtAuthority: e.target.value})}
+                    />
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-red-800 uppercase mb-1 block">AY Started</label>
+                    <input 
+                        type="text" 
+                        className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-red-500"
+                        placeholder="e.g. 2020-2021"
+                        value={inputC.ayStarted} 
+                        onChange={e => setInputC({...inputC, ayStarted: e.target.value})}
+                    />
+                </div>
             </div>
-            
-            {/* REMOVED DEGREE PROGRAM DROPDOWN */}
-            
-            <div className="flex-1 min-w-[200px]">
-                <label className="text-xs font-bold text-red-800 uppercase mb-1 block">Faculty Handling</label>
-                <select className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-red-500" value={inputC.faculty} onChange={e => setInputC({...inputC, faculty: e.target.value})}>
-                    <option value="">Select Faculty...</option>
-                    {facultyOptions.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                 <div>
+                    <label className="text-xs font-bold text-red-800 uppercase mb-1 block">No. of Students (AY 22-23)</label>
+                    <input 
+                        type="number" 
+                        className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-red-500"
+                        placeholder="0"
+                        value={inputC.studentsAy1} 
+                        onChange={e => setInputC({...inputC, studentsAy1: e.target.value})}
+                    />
+                </div>
+                 <div>
+                    <label className="text-xs font-bold text-red-800 uppercase mb-1 block">No. of Students (AY 23-24)</label>
+                    <input 
+                        type="number" 
+                        className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-red-500"
+                        placeholder="0"
+                        value={inputC.studentsAy2} 
+                        onChange={e => setInputC({...inputC, studentsAy2: e.target.value})}
+                    />
+                </div>
+                 <div>
+                    <label className="text-xs font-bold text-red-800 uppercase mb-1 block">No. of Students (AY 24-25)</label>
+                    <input 
+                        type="number" 
+                        className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-red-500"
+                        placeholder="0"
+                        value={inputC.studentsAy3} 
+                        onChange={e => setInputC({...inputC, studentsAy3: e.target.value})}
+                    />
+                </div>
             </div>
-            <button onClick={addRowC} className="bg-red-600 text-white px-6 py-2 rounded shadow hover:bg-red-700 font-bold h-[38px]">ADD</button>
+
+            <div className="flex items-end gap-4">
+                <div className="flex-1">
+                    <label className="text-xs font-bold text-red-800 uppercase mb-1 block">Faculty Handling</label>
+                    <select className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-red-500" value={inputC.faculty} onChange={e => setInputC({...inputC, faculty: e.target.value})}>
+                        <option value="">Select Faculty...</option>
+                        {facultyOptions.map(f => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                </div>
+                <button onClick={addRowC} className="bg-red-600 text-white px-8 py-2 rounded shadow hover:bg-red-700 font-bold h-[38px]">ADD ROW</button>
+            </div>
         </div>
 
         {/* Table C - Columns for Future Data */}
