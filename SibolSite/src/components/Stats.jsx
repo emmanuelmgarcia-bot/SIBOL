@@ -6,6 +6,7 @@ const Stats = () => {
     facultyCount: 0,
     ipSubjectCount: 0
   });
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -24,11 +25,14 @@ const Stats = () => {
             facultyCount: data.facultyCount || 0,
             ipSubjectCount: data.ipSubjectCount || 0
           });
+          setError(null);
         } else {
             console.error('Stats response not OK:', res.statusText);
+            setError(`Error: ${res.status} ${res.statusText}`);
         }
       } catch (err) {
         console.error('Failed to fetch stats:', err);
+        setError(`Fetch failed: ${err.message}`);
       }
     };
 
@@ -47,6 +51,7 @@ const Stats = () => {
             <h2 className="text-3xl font-bold mb-12 border-b-4 border-green-600 inline-block pb-2 text-white">
                 Sibol Stats
             </h2>
+            {error && <p className="text-red-400 mb-4">{error}</p>}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
                 {stats.map((stat, index) => (
                 <div key={index} className="flex flex-col items-center">

@@ -142,10 +142,10 @@ const Navbar = () => {
             </button>
             {isIPOpen && (
               <div className="pl-4 space-y-2 border-l-2 border-green-100 ml-1">
-                  <a href="/ip/legal-bases" className="block text-sm text-gray-600 hover:text-green-700 py-1">Legal Bases of IP Education</a>
-                  <a href="/ip/vision-mission" className="block text-sm text-gray-600 hover:text-green-700 py-1">Vision and Mission</a>
-                  <a href="/ip/objectives" className="block text-sm text-gray-600 hover:text-green-700 py-1">Objectives</a>
-                  <a href="/ip/programs" className="block text-sm text-gray-600 hover:text-green-700 py-1">Programs, Projects and Activities</a>
+                  <a href="/peace/legal-bases" className="block text-sm text-gray-600 hover:text-green-700 py-1">Legal Bases of IP Education</a>
+                  <a href="/peace/vision-mission" className="block text-sm text-gray-600 hover:text-green-700 py-1">Vision and Mission</a>
+                  <a href="/peace/objectives" className="block text-sm text-gray-600 hover:text-green-700 py-1">Objectives</a>
+                  <a href="/peace/programs" className="block text-sm text-gray-600 hover:text-green-700 py-1">Programs, Projects and Activities</a>
               </div>
             )}
           </div>
@@ -153,7 +153,7 @@ const Navbar = () => {
           <button onClick={() => handleNavigation('footer')} className="text-left text-green-800 font-medium hover:text-green-600">Message Us</button>
           <button onClick={() => handleNavigation('events')} className="text-left text-green-800 font-medium hover:text-green-600">Events</button>
           <button onClick={() => handleNavigation('news')} className="text-left text-green-800 font-medium hover:text-green-600">News</button>
-          <a href="#" className="text-green-800 font-medium hover:text-green-600">About Us</a>
+          <a href="/about-us" className="text-green-800 font-medium hover:text-green-600">About Us</a>
         </div>
       )}
     </nav>

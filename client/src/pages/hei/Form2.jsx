@@ -44,6 +44,15 @@ const Form2 = () => {
       if (!heiId) return;
 
       try {
+        const heisRes = await fetch(`${apiBase}/api/heis`);
+        const heisData = await heisRes.json();
+        if (heisRes.ok && Array.isArray(heisData)) {
+            const myHei = heisData.find(h => h.id == heiId);
+            if (myHei) {
+                setCampusName(myHei.campus_name || myHei.name);
+            }
+        }
+
         const subjectsRes = await fetch(`${apiBase}/api/heis/subjects?heiId=${encodeURIComponent(heiId)}&status=Approved`);
         const subjectsData = await subjectsRes.json();
         if (subjectsRes.ok && Array.isArray(subjectsData)) {
