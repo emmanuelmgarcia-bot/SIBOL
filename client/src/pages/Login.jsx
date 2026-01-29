@@ -26,10 +26,8 @@ const Login = () => {
     try {
       // console.log("Sending login request...", formData);
 
-      let apiBase = import.meta.env.VITE_API_BASE_URL || '';
-
-      // Smart fallback for local development
-      if (!apiBase && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      let apiBase = import.meta.env.VITE_API_BASE_URL || window.location.origin;
+      if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !import.meta.env.VITE_API_BASE_URL) {
           apiBase = 'http://localhost:5000';
       }
 
