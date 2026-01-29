@@ -48,6 +48,16 @@ app.use('/api/*', (req, res) => {
     res.status(404).json({ error: `API endpoint not found: ${req.method} ${req.originalUrl}` });
 });
 
+// Global API error handler: ensure JSON responses for API errors
+app.use((err, req, res, next) => {
+    if (req.path && req.path.startsWith('/api')) {
+        console.error('API error:', err && err.message ? err.message : err);
+        const status = err.status || 500;
+        return res.status(status).json({ error: err.message || 'Server error' });
+    }
+    next(err);
+});
+
 let locationData = {
     regions: [],
     provinces: [],
