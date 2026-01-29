@@ -26,7 +26,7 @@ const Login = () => {
     try {
       // console.log("Sending login request...", formData);
 
-      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
 
       const response = await fetch(`${apiBase}/api/auth/login`, {
         method: 'POST',

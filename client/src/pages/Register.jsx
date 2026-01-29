@@ -38,7 +38,7 @@ const Register = () => {
   const [isManualBarangay, setIsManualBarangay] = useState(false);
 
   useEffect(() => {
-    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
     fetch(`${apiBase}/api/hei-data`)
       .then(res => res.json())
       .then(data => {
@@ -78,7 +78,7 @@ const Register = () => {
     setBarangayOptions([]);
 
     if (region) {
-        const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+        const apiBase = import.meta.env.VITE_API_BASE_URL || '';
         fetch(`${apiBase}/api/provinces/${encodeURIComponent(region)}`)
             .then(res => res.json())
             .then(data => setProvinceOptions(data));
@@ -95,7 +95,7 @@ const Register = () => {
     setBarangayOptions([]);
 
     if (province) {
-        const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+        const apiBase = import.meta.env.VITE_API_BASE_URL || '';
         fetch(`${apiBase}/api/municipalities/${encodeURIComponent(province)}`)
             .then(res => res.json())
             .then(data => setCityOptions(data));
@@ -111,7 +111,7 @@ const Register = () => {
     setBarangayOptions([]);
 
     if (city) {
-        const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+        const apiBase = import.meta.env.VITE_API_BASE_URL || '';
         fetch(`${apiBase}/api/barangays/${encodeURIComponent(city)}`)
             .then(res => res.json())
             .then(data => setBarangayOptions(data));
@@ -139,7 +139,7 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
 
     const payload = {
       heiName: formData.heiName || heiSearch.trim(),

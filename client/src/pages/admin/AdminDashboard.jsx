@@ -23,7 +23,7 @@ const AdminDashboard = () => {
   const wrapperRef = useRef(null);
 
   useEffect(() => {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
     const userRaw = localStorage.getItem('sibol_user');
     const user = userRaw ? JSON.parse(userRaw) : null;
     const region = user && user.assigned_region ? user.assigned_region : null;
@@ -100,7 +100,7 @@ const AdminDashboard = () => {
 
       try {
         setStatsLoading(true);
-        const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+        const apiBase = import.meta.env.VITE_API_BASE_URL || '';
 
         const heiId = selectedHei.heiId;
 

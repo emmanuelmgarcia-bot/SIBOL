@@ -28,7 +28,7 @@ const Form2 = () => {
   const [facultyOptions, setFacultyOptions] = useState([]);
   const [facultyEducation, setFacultyEducation] = useState({});
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '';
 
   const getHeiInfo = () => {
     const userRaw = localStorage.getItem('sibol_user');
@@ -158,7 +158,7 @@ const Form2 = () => {
       const heiId = user && user.hei_id ? user.hei_id : null;
       // Use the fetched campus name from state, fallback to user.campus, then MAIN
       const campus = campusName || (user && user.campus ? user.campus : 'MAIN');
-      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
       const response = await fetch(`${apiBase}/api/heis/submissions`, {
         method: 'POST',
         headers: {

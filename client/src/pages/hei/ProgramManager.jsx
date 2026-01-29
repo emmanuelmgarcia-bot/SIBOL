@@ -16,7 +16,7 @@ const ProgramManager = () => {
   const [editSaving, setEditSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '';
 
   // Load Master Programs and My Requests
   useEffect(() => {

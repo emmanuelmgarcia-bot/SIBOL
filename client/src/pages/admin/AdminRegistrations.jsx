@@ -56,7 +56,7 @@ const AdminRegistrations = () => {
   const [registrations, setRegistrations] = useState([]);
 
   useEffect(() => {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
     const load = async () => {
       try {
         const userRaw = localStorage.getItem('sibol_user');
@@ -164,7 +164,7 @@ const AdminRegistrations = () => {
       alert('Missing assigned region. Cannot approve.');
       return;
     }
-    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
     try {
       const res = await fetch(`${apiBase}/api/registrations/${id}/approve`, {
         method: 'POST',
@@ -230,7 +230,7 @@ const AdminRegistrations = () => {
       alert('Missing assigned region. Cannot delete.');
       return;
     }
-    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
     try {
       const res = await fetch(`${apiBase}/api/registrations/${id}/delete`, {
         method: 'POST',

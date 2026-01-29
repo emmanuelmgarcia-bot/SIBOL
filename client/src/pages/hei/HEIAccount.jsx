@@ -72,10 +72,7 @@ const HEIAccount = () => {
     setLoading(true);
 
     try {
-      const apiBase =
-        window.location.hostname === 'localhost'
-          ? 'http://localhost:5000'
-          : '';
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
 
       const response = await fetch(`${apiBase}/api/auth/update-credentials`, {
         method: 'POST',

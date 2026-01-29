@@ -15,10 +15,7 @@ const HEISubmissions = () => {
       setLoading(false);
       return;
     }
-    const apiBase =
-      window.location.hostname === 'localhost'
-        ? 'http://localhost:5000'
-        : '';
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
     const load = async () => {
       try {
         const response = await fetch(`${apiBase}/api/heis/submissions?heiId=${encodeURIComponent(heiId)}`);

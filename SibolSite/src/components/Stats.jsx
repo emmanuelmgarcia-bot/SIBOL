@@ -11,7 +11,7 @@ const Stats = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+        const apiBase = import.meta.env.VITE_API_BASE_URL || '';
         console.log('Fetching stats from:', `${apiBase}/api/website/stats`);
 
         const res = await fetch(`${apiBase}/api/website/stats`);

@@ -9,7 +9,7 @@ const FacultyManager = () => {
   const [heiName, setHeiName] = useState('');
   const [campusName, setCampusName] = useState('');
 
-  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '';
 
   const getHeiInfo = () => {
     const userRaw = localStorage.getItem('sibol_user');
