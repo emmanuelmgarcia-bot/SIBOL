@@ -11,7 +11,13 @@ const Stats = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+        let apiBase = import.meta.env.VITE_API_BASE_URL || '';
+        
+        // Smart fallback for local development if proxy/env isn't set
+        if (!apiBase && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+             apiBase = 'http://localhost:5000';
+        }
+
         console.log('Fetching stats from:', `${apiBase}/api/website/stats`);
 
         const res = await fetch(`${apiBase}/api/website/stats`);

@@ -17,7 +17,13 @@ export const DataProvider = ({ children }) => {
 
   const buildApiUrl = (path) => {
     const baseEnv = import.meta.env.VITE_API_BASE_URL;
-    const base = baseEnv && typeof baseEnv === 'string' ? baseEnv.trim() : '';
+    let base = baseEnv && typeof baseEnv === 'string' ? baseEnv.trim() : '';
+    
+    // Smart fallback for local development
+    if (!base && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        base = 'http://localhost:5000';
+    }
+
     if (!base) {
       return path;
     }
