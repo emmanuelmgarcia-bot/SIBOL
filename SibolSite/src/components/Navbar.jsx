@@ -59,7 +59,6 @@ const Navbar = () => {
         {/* Desktop Navigation Links */}
         <div className="hidden lg:flex items-center space-x-6 text-sm font-medium text-green-800">
           <a href="/" className="hover:text-green-600">Home</a>
-          <a href="/about-us" className="hover:text-green-600">About Us</a>
           <a href="/portal/login" className="hover:text-green-600">Login</a>
           
           {/* Peace Education Dropdown */}

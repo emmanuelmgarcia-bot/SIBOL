@@ -21,6 +21,15 @@ const Stats = () => {
         console.log('Fetching stats from:', `${apiBase}/api/website/stats`);
 
         const res = await fetch(`${apiBase}/api/website/stats`);
+        
+        // Debug: Log non-JSON responses
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") === -1) {
+            const text = await res.text();
+            console.error('Stats fetch returned non-JSON:', text.substring(0, 100));
+            throw new Error(`Expected JSON but got ${contentType}`);
+        }
+
         console.log('Stats response status:', res.status);
         
         if (res.ok) {
