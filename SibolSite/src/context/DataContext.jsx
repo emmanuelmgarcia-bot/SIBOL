@@ -8,6 +8,8 @@ export const DataProvider = ({ children }) => {
   const [heroSlides, setHeroSlides] = useState([]);
   const [newsItems, setNewsItems] = useState([]);
   const [eventItems, setEventItems] = useState([]);
+  const [aboutUs, setAboutUs] = useState({});
+  const [peaceEducation, setPeaceEducation] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -37,6 +39,8 @@ export const DataProvider = ({ children }) => {
           setHeroSlides(Array.isArray(data.heroSlides) ? data.heroSlides : []);
           setNewsItems(Array.isArray(data.newsItems) ? data.newsItems : []);
           setEventItems(Array.isArray(data.eventItems) ? data.eventItems : []);
+          setAboutUs(data.aboutUs || {});
+          setPeaceEducation(data.peaceEducation || {});
         }
       } catch (err) {
         console.error('Failed to load website content', err);
@@ -55,7 +59,7 @@ export const DataProvider = ({ children }) => {
       const res = await fetch(buildApiUrl('/api/website/content'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ heroSlides, newsItems, eventItems }),
+        body: JSON.stringify({ heroSlides, newsItems, eventItems, aboutUs, peaceEducation }),
       });
       if (!res.ok) {
         let message = `Status ${res.status}`;
@@ -113,12 +117,25 @@ export const DataProvider = ({ children }) => {
     setEventItems((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const updateAboutUs = (data) => {
+    setAboutUs(data);
+  };
+
+  const updatePeaceEducation = (subPageId, data) => {
+    setPeaceEducation(prev => ({
+      ...prev,
+      [subPageId]: data
+    }));
+  };
+
   return (
     <DataContext.Provider
       value={{
         heroSlides,
         newsItems,
         eventItems,
+        aboutUs,
+        peaceEducation,
         addHeroSlide,
         removeHeroSlide,
         addNewsItem,
@@ -127,6 +144,8 @@ export const DataProvider = ({ children }) => {
         addEventItem,
         updateEventItem,
         removeEventItem,
+        updateAboutUs,
+        updatePeaceEducation,
         saveWebsiteContent,
         loading,
         loadError,

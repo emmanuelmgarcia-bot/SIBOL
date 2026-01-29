@@ -6,7 +6,7 @@ const getWebsiteContent = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('website_content')
-      .select('id, hero_json, news_json, events_json')
+      .select('id, hero_json, news_json, events_json, about_us_json, peace_education_json')
       .eq('id', WEBSITE_CONTENT_ID)
       .maybeSingle();
 
@@ -19,14 +19,18 @@ const getWebsiteContent = async (req, res) => {
       return res.status(200).json({
         heroSlides: [],
         newsItems: [],
-        eventItems: []
+        eventItems: [],
+        aboutUs: {},
+        peaceEducation: {}
       });
     }
 
     return res.status(200).json({
       heroSlides: data.hero_json || [],
       newsItems: data.news_json || [],
-      eventItems: data.events_json || []
+      eventItems: data.events_json || [],
+      aboutUs: data.about_us_json || {},
+      peaceEducation: data.peace_education_json || {}
     });
   } catch (err) {
     console.error('Get website content exception:', err.message);
@@ -36,13 +40,15 @@ const getWebsiteContent = async (req, res) => {
 
 const saveWebsiteContent = async (req, res) => {
   try {
-    const { heroSlides, newsItems, eventItems } = req.body || {};
+    const { heroSlides, newsItems, eventItems, aboutUs, peaceEducation } = req.body || {};
 
     const payload = {
       id: WEBSITE_CONTENT_ID,
       hero_json: Array.isArray(heroSlides) ? heroSlides : [],
       news_json: Array.isArray(newsItems) ? newsItems : [],
-      events_json: Array.isArray(eventItems) ? eventItems : []
+      events_json: Array.isArray(eventItems) ? eventItems : [],
+      about_us_json: aboutUs || {},
+      peace_education_json: peaceEducation || {}
     };
 
     const { error } = await supabase

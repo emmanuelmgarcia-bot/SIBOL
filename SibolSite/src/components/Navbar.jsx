@@ -92,19 +92,18 @@ const Navbar = () => {
             </button>
             {isIPOpen && (
               <div className="absolute left-0 mt-0 w-64 bg-white border border-gray-200 shadow-lg rounded-md py-2 z-50">
-                {ipItems.map((item, index) => (
-                  <a key={index} href="#" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">
-                    {item}
-                  </a>
-                ))}
+                  <a href="/peace/legal-bases" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">Legal Bases of IP Education</a>
+                  <a href="/peace/vision-mission" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">Vision and Mission</a>
+                  <a href="/peace/objectives" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">Objectives</a>
+                  <a href="/peace/programs" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">Programs, Projects and Activities</a>
               </div>
             )}
           </div>
 
           <button onClick={() => handleNavigation('footer')} className="hover:text-green-600">Message Us</button>
-          <button onClick={() => handleNavigation('events')} className="hover:text-green-600">Events</button>
-          <button onClick={() => handleNavigation('news')} className="hover:text-green-600">News</button>
-          <a href="#" className="hover:text-green-600">About Us</a>
+          <a href="/events" className="hover:text-green-600">Events</a>
+          <a href="/news" className="hover:text-green-600">News</a>
+          <a href="/about-us" className="hover:text-green-600">About Us</a>
         </div>
       </div>
 
@@ -150,10 +149,10 @@ const Navbar = () => {
             )}
           </div>
 
-          <button onClick={() => handleNavigation('footer')} className="text-left text-green-800 font-medium hover:text-green-600">Message Us</button>
-          <button onClick={() => handleNavigation('events')} className="text-left text-green-800 font-medium hover:text-green-600">Events</button>
-          <button onClick={() => handleNavigation('news')} className="text-left text-green-800 font-medium hover:text-green-600">News</button>
-          <a href="/about-us" className="text-green-800 font-medium hover:text-green-600">About Us</a>
+          <button onClick={() => { handleNavigation('footer'); setIsMobileMenuOpen(false); }} className="block py-2 text-gray-600 hover:text-green-600">Message Us</button>
+          <a href="/events" className="block py-2 text-gray-600 hover:text-green-600">Events</a>
+          <a href="/news" className="block py-2 text-gray-600 hover:text-green-600">News</a>
+          <a href="/about-us" className="block py-2 text-gray-600 hover:text-green-600">About Us</a>
         </div>
       )}
     </nav>

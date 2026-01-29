@@ -7,6 +7,8 @@ import LegalBases from './pages/peace/LegalBases';
 import VisionMission from './pages/peace/VisionMission';
 import Objectives from './pages/peace/Objectives';
 import ProgramsProjects from './pages/peace/ProgramsProjects';
+import NewsPage from './pages/NewsPage';
+import EventsPage from './pages/EventsPage';
 import IPLegalBases from './pages/ip/LegalBases';
 import IPVisionMission from './pages/ip/VisionMission';
 import IPObjectives from './pages/ip/Objectives';
@@ -20,6 +22,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/news" element={<NewsPage />} />
+          <Route path="/events" element={<EventsPage />} />
           <Route path="/peace/legal-bases" element={<LegalBases />} />
           <Route path="/peace/vision-mission" element={<VisionMission />} />
           <Route path="/peace/objectives" element={<Objectives />} />
