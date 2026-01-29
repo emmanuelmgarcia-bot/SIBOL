@@ -30,8 +30,8 @@ const Home = () => {
       <main className="flex-grow">
         <Hero />
         <Stats />
-        <News />
-        <Events />
+        <News isHome={true} />
+        <Events isHome={true} />
       </main>
       <Footer />
     </div>
