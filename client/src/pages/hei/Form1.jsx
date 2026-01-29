@@ -108,6 +108,8 @@ const Form1 = () => {
       const userRaw = localStorage.getItem('sibol_user');
       const user = userRaw ? JSON.parse(userRaw) : null;
       const heiId = user && user.hei_id ? user.hei_id : null;
+      // Use the fetched campus name from state, fallback to user.campus, then MAIN
+      const campus = campusName || (user && user.campus ? user.campus : 'MAIN');
       const apiBase =
         window.location.hostname === 'localhost'
           ? 'http://localhost:5000'
@@ -119,7 +121,7 @@ const Form1 = () => {
         },
         body: JSON.stringify({
           heiId,
-          campus: 'MAIN',
+          campus,
           formType: 'form1',
           fileName: `form1-${new Date().toISOString().slice(0, 10)}.json`,
           mimeType: 'application/json',

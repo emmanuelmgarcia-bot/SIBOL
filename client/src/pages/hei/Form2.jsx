@@ -5,6 +5,7 @@ const Form2 = () => {
   const [rowsB, setRowsB] = useState([]);
   const [rowsC, setRowsC] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [campusName, setCampusName] = useState('MAIN'); // Default to MAIN, update from API
 
   const [inputA, setInputA] = useState({ subject: '', program: '', faculty: '' });
   const [inputB, setInputB] = useState({ subject: '', program: '', faculty: '' });
@@ -146,6 +147,8 @@ const Form2 = () => {
       const userRaw = localStorage.getItem('sibol_user');
       const user = userRaw ? JSON.parse(userRaw) : null;
       const heiId = user && user.hei_id ? user.hei_id : null;
+      // Use the fetched campus name from state, fallback to user.campus, then MAIN
+      const campus = campusName || (user && user.campus ? user.campus : 'MAIN');
       const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
       const response = await fetch(`${apiBase}/api/heis/submissions`, {
         method: 'POST',
@@ -154,7 +157,7 @@ const Form2 = () => {
         },
         body: JSON.stringify({
           heiId,
-          campus: 'MAIN',
+          campus,
           formType: 'form2',
           fileName: `form2-${new Date().toISOString().slice(0, 10)}.json`,
           mimeType: 'application/json',

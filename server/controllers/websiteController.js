@@ -68,6 +68,8 @@ const getStats = async (req, res) => {
       .from('registrations')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'Approved');
+    
+    console.log('Stats Debug - HEI Count:', heiCount, 'Error:', heiError);
 
     if (heiError) throw heiError;
 
@@ -78,12 +80,16 @@ const getStats = async (req, res) => {
       .eq('status', 'Approved')
       .in('type', ['Integrated', 'Elective', 'Degree Program']);
 
+    console.log('Stats Debug - Subject Count:', ipSubjectCount, 'Error:', subjectError);
+
     if (subjectError) throw subjectError;
 
     // 3. Total Faculties (All entries in faculty table)
     const { count: facultyCount, error: facultyError } = await supabase
       .from('faculty')
       .select('*', { count: 'exact', head: true });
+
+    console.log('Stats Debug - Faculty Count:', facultyCount, 'Error:', facultyError);
 
     if (facultyError) throw facultyError;
 

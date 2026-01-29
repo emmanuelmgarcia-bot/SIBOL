@@ -58,6 +58,8 @@ const Navbar = () => {
 
         {/* Desktop Navigation Links */}
         <div className="hidden lg:flex items-center space-x-6 text-sm font-medium text-green-800">
+          <a href="/" className="hover:text-green-600">Home</a>
+          <a href="/about-us" className="hover:text-green-600">About Us</a>
           <a href="/portal/login" className="hover:text-green-600">Login</a>
           
           {/* Peace Education Dropdown */}
@@ -71,11 +73,10 @@ const Navbar = () => {
             </button>
             {isPeaceOpen && (
               <div className="absolute left-0 mt-0 w-64 bg-white border border-gray-200 shadow-lg rounded-md py-2 z-50">
-                {peaceItems.map((item, index) => (
-                  <a key={index} href="#" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">
-                    {item}
-                  </a>
-                ))}
+                  <a href="/peace/legal-bases" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">Legal Bases of Peace Education</a>
+                  <a href="/peace/vision-mission" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">Vision and Mission</a>
+                  <a href="/peace/objectives" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">Objectives</a>
+                  <a href="/peace/programs" className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">Programs, Projects and Activities</a>
               </div>
             )}
           </div>
@@ -141,11 +142,10 @@ const Navbar = () => {
             </button>
             {isIPOpen && (
               <div className="pl-4 space-y-2 border-l-2 border-green-100 ml-1">
-                {ipItems.map((item, index) => (
-                  <a key={index} href="#" className="block text-sm text-gray-600 hover:text-green-700 py-1">
-                    {item}
-                  </a>
-                ))}
+                  <a href="/ip/legal-bases" className="block text-sm text-gray-600 hover:text-green-700 py-1">Legal Bases of IP Education</a>
+                  <a href="/ip/vision-mission" className="block text-sm text-gray-600 hover:text-green-700 py-1">Vision and Mission</a>
+                  <a href="/ip/objectives" className="block text-sm text-gray-600 hover:text-green-700 py-1">Objectives</a>
+                  <a href="/ip/programs" className="block text-sm text-gray-600 hover:text-green-700 py-1">Programs, Projects and Activities</a>
               </div>
             )}
           </div>
