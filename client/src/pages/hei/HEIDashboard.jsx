@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import StatCard from '../../components/StatCard';
+import { getApiBase } from '../../utils/apiBase';
 
 const HEIDashboard = () => {
   const [heiName, setHeiName] = useState('');
@@ -26,7 +27,7 @@ const HEIDashboard = () => {
           return;
         }
 
-        const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+        const apiBase = getApiBase();
 
         const [heisRes, subjectsRes, facultyRes, programsRes] = await Promise.all([
           fetch(`${apiBase}/api/heis`),

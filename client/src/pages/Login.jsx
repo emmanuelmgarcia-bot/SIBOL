@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
+import { getApiBase } from '../utils/apiBase';
 
 const Login = () => {
   const location = useLocation();
@@ -26,10 +27,7 @@ const Login = () => {
     try {
       // console.log("Sending login request...", formData);
 
-      let apiBase = import.meta.env.VITE_API_BASE_URL || window.location.origin;
-      if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !import.meta.env.VITE_API_BASE_URL) {
-          apiBase = 'http://localhost:5000';
-      }
+      const apiBase = getApiBase() || window.location.origin;
 
       const response = await fetch(`${apiBase}/api/auth/login`, {
         method: 'POST',
@@ -98,10 +96,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const apiBase =
-        window.location.hostname === 'localhost'
-          ? 'http://localhost:5000'
-          : '';
+      const apiBase = getApiBase();
 
       const response = await fetch(`${apiBase}/api/auth/reset-password`, {
         method: 'POST',

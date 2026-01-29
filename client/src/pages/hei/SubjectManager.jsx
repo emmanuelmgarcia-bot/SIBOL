@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiBase } from '../../utils/apiBase';
 
 const SubjectManager = () => {
   const [subjects, setSubjects] = useState([]);
@@ -25,7 +26,7 @@ const SubjectManager = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [saving, setSaving] = useState(false);
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+  const apiBase = getApiBase();
 
   const getHeiInfo = () => {
       const userRaw = localStorage.getItem('sibol_user');

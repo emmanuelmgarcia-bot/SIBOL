@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiBase } from '../../utils/apiBase';
 
 const FacultyManager = () => {
   const [faculty, setFaculty] = useState([]);
@@ -9,7 +10,7 @@ const FacultyManager = () => {
   const [heiName, setHeiName] = useState('');
   const [campusName, setCampusName] = useState('');
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+  const apiBase = getApiBase();
 
   const getHeiInfo = () => {
     const userRaw = localStorage.getItem('sibol_user');

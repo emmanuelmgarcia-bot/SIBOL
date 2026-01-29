@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
+import { getApiBase } from '../utils/apiBase';
 
 const Register = () => {
   // --- STATE: HEI & Campus ---
@@ -36,14 +37,6 @@ const Register = () => {
   });
 
   const [isManualBarangay, setIsManualBarangay] = useState(false);
-
-  const getApiBase = () => {
-    let apiBase = import.meta.env.VITE_API_BASE_URL || '';
-    if (!apiBase && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        apiBase = 'http://localhost:5000';
-    }
-    return apiBase;
-  };
 
   useEffect(() => {
     const apiBase = getApiBase();

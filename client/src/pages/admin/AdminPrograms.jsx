@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Building2, MapPin, CheckCircle, XCircle, FileText, GraduationCap, Plus, Trash2 } from 'lucide-react';
+import { getApiBase } from '../../utils/apiBase';
 
 const AdminPrograms = () => {
   // ==========================================
@@ -11,7 +12,7 @@ const AdminPrograms = () => {
   const [newProgram, setNewProgram] = useState({ code: '', title: '' });
   const [masterSearch, setMasterSearch] = useState(''); // NEW: Search State
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+  const apiBase = getApiBase();
 
   useEffect(() => {
     fetch(`${apiBase}/api/heis/programs/master`)

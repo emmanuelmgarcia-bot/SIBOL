@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, ChevronDown, Building2, MapPin } from 'lucide-react';
 import StatCard from '../../components/StatCard';
+import { getApiBase } from '../../utils/apiBase';
 
 const AdminDashboard = () => {
   // --- STATE ---
@@ -23,7 +24,7 @@ const AdminDashboard = () => {
   const wrapperRef = useRef(null);
 
   useEffect(() => {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+    const apiBase = getApiBase();
     const userRaw = localStorage.getItem('sibol_user');
     const user = userRaw ? JSON.parse(userRaw) : null;
     const region = user && user.assigned_region ? user.assigned_region : null;
@@ -100,7 +101,7 @@ const AdminDashboard = () => {
 
       try {
         setStatsLoading(true);
-        const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+        const apiBase = getApiBase();
 
         const heiId = selectedHei.heiId;
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Building2, MapPin, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { getApiBase } from '../../utils/apiBase';
 
 const AdminSubjects = () => {
   // --- HEI & CAMPUS SELECTION STATE ---
@@ -26,7 +27,7 @@ const AdminSubjects = () => {
 
     const fetchSubjects = async () => {
       setLoadingSubjects(true);
-      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const apiBase = getApiBase();
       const userRaw = localStorage.getItem('sibol_user');
       const user = userRaw ? JSON.parse(userRaw) : null;
       const region = user?.assigned_region;
@@ -64,7 +65,7 @@ const AdminSubjects = () => {
 
 
   useEffect(() => {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+    const apiBase = getApiBase();
     const userRaw = localStorage.getItem('sibol_user');
     const user = userRaw ? JSON.parse(userRaw) : null;
     const region = user && user.assigned_region ? user.assigned_region : null;
@@ -130,7 +131,7 @@ const AdminSubjects = () => {
     if(!window.confirm("Approve this subject?")) return;
 
     try {
-        const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+        const apiBase = getApiBase();
         const res = await fetch(`${apiBase}/api/heis/subjects/${id}/status`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -154,7 +155,7 @@ const AdminSubjects = () => {
     if(!window.confirm("Decline this subject?")) return;
 
     try {
-        const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+        const apiBase = getApiBase();
         const res = await fetch(`${apiBase}/api/heis/subjects/${id}/status`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

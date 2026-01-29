@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiBase } from '../../utils/apiBase';
 
 const Stats = () => {
   const [statsData, setStatsData] = useState({
@@ -11,12 +12,7 @@ const Stats = () => {
     // Fetch stats from the backend
     const fetchStats = async () => {
       try {
-        let apiBase = import.meta.env.VITE_API_BASE_URL || '';
-
-        // Smart fallback for local development if proxy/env isn't set
-        if (!apiBase && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-            apiBase = 'http://localhost:5000';
-        }
+        const apiBase = getApiBase();
 
         console.log('Fetching stats from (client):', `${apiBase}/api/website/stats`);
 

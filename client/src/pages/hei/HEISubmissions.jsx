@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Calendar, Trash2 } from 'lucide-react';
+import { getApiBase } from '../../utils/apiBase';
 
 const HEISubmissions = () => {
   const [activeTab, setActiveTab] = useState('Form 1');
@@ -15,7 +16,7 @@ const HEISubmissions = () => {
       setLoading(false);
       return;
     }
-    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+    const apiBase = getApiBase();
     const load = async () => {
       try {
         const response = await fetch(`${apiBase}/api/heis/submissions?heiId=${encodeURIComponent(heiId)}`);

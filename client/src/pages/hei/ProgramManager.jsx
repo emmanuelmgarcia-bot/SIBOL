@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiBase } from '../../utils/apiBase';
 
 const ProgramManager = () => {
   const [masterPrograms, setMasterPrograms] = useState([]);
@@ -16,7 +17,7 @@ const ProgramManager = () => {
   const [editSaving, setEditSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+  const apiBase = getApiBase();
 
   // Load Master Programs and My Requests
   useEffect(() => {

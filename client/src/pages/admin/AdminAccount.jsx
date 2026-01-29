@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiBase } from '../../utils/apiBase';
 
 const passwordIsValid = (value) => {
   if (!value || value.length < 8) return false;
@@ -70,7 +71,7 @@ const AdminAccount = () => {
     setLoading(true);
 
     try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const apiBase = getApiBase();
 
       const response = await fetch(`${apiBase}/api/auth/update-credentials`, {
         method: 'POST',

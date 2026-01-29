@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Building2, MapPin, FileText, Download, Eye, Calendar } from 'lucide-react';
+import { getApiBase } from '../../utils/apiBase';
 
 const AdminSubmissions = () => {
   const [heiList, setHeiList] = useState([]);
@@ -15,7 +16,7 @@ const AdminSubmissions = () => {
   const [submissionsForm2, setSubmissionsForm2] = useState([]);
 
   useEffect(() => {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+    const apiBase = getApiBase();
 
     const userRaw = localStorage.getItem('sibol_user');
     const user = userRaw ? JSON.parse(userRaw) : null;
