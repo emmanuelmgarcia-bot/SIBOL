@@ -21,19 +21,19 @@ const Stats = () => {
         console.log('Fetching stats from:', `${apiBase}/api/website/stats`);
 
         const res = await fetch(`${apiBase}/api/website/stats`);
+        const text = await res.text();
         
-        // Debug: Log non-JSON responses
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") === -1) {
-            const text = await res.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
             console.error('Stats fetch returned non-JSON:', text.substring(0, 100));
-            throw new Error(`Expected JSON but got ${contentType}`);
+            throw new Error(`Server returned non-JSON response: ${text.substring(0, 50)}...`);
         }
 
         console.log('Stats response status:', res.status);
         
         if (res.ok) {
-          const data = await res.json();
           console.log('Stats data received:', data);
           setStatsData({
             heiCount: data.heiCount || 0,
@@ -43,7 +43,7 @@ const Stats = () => {
           setError(null);
         } else {
             console.error('Stats response not OK:', res.statusText);
-            setError(`Error: ${res.status} ${res.statusText}`);
+            setError(`Error: ${res.status} ${data.error || res.statusText}`);
         }
       } catch (err) {
         console.error('Failed to fetch stats:', err);

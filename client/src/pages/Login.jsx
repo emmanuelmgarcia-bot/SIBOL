@@ -42,15 +42,14 @@ const Login = () => {
         }),
       });
 
-      // Debug: Log non-JSON responses
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") === -1) {
-          const text = await response.text();
+      const text = await response.text();
+      let data;
+      try {
+          data = JSON.parse(text);
+      } catch (e) {
           console.error('Login response was not JSON:', text.substring(0, 100));
           throw new Error('Server returned an error (non-JSON). Check console for details.');
       }
-
-      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
