@@ -26,7 +26,12 @@ const Login = () => {
     try {
       // console.log("Sending login request...", formData);
 
-      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      let apiBase = import.meta.env.VITE_API_BASE_URL || '';
+
+      // Smart fallback for local development
+      if (!apiBase && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+          apiBase = 'http://localhost:5000';
+      }
 
       const response = await fetch(`${apiBase}/api/auth/login`, {
         method: 'POST',
@@ -36,6 +41,14 @@ const Login = () => {
             password: formData.password
         }),
       });
+
+      // Debug: Log non-JSON responses
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") === -1) {
+          const text = await response.text();
+          console.error('Login response was not JSON:', text.substring(0, 100));
+          throw new Error('Server returned an error (non-JSON). Check console for details.');
+      }
 
       const data = await response.json();
 
